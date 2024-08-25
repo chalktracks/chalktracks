@@ -19,7 +19,7 @@ We're building this in order to:
 * Develop an ML-based portfolio project
 * Keep the kids entertained!
 
-We envisage a system consisting of a motorised toy dump truck with a forward-facing camera fitted, running a segmentation model for chalk line detection. The bulk of the work will involve building the platform, and developing the chalk line segmentation model.
+The evisaged system consists of a motorised toy dump truck with a forward-facing camera fitted, running a segmentation model for chalk line detection. The bulk of the work will involve building the platform, and developing the chalk line segmentation model.
 
 <img src="doc/20240627_172255.jpg" width="400"/> <img src="doc/20240707_152512.jpg" width="400"/> 
 
@@ -29,6 +29,11 @@ We envisage a system consisting of a motorised toy dump truck with a forward-fac
 https://github.com/user-attachments/assets/9ad01d09-88ea-4e09-aedb-314ebd87270b
 
 **Video:** First prototype chalk segmentation, video captured on a hand-held smartphone, segmentation model trained on [roboflow](https://roboflow.com/).
+
+### Contributors
+<a href="https://github.com/chalktracks/chalktracks/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=chalktracks/chalktracks" />
+</a>
 
 ## Segmentation Model Training Workflow
 
@@ -69,7 +74,4 @@ Code will be added and steps will be documented as the project is built out.
 
 
 
-## Contributors
-<a href="https://github.com/chalktracks/chalktracks/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=chalktracks/chalktracks" />
-</a>
+
