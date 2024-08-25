@@ -94,10 +94,6 @@ def main(source_image_dir, output_image_dir, visualise):
 
 
 if __name__ == "__main__":
-    # source_image_dir = Path("../datasets/run_17_maxicam_multiple_lines_around_the_house/run_17_filtered")
-    # output_image_dir = Path("/tmp/run_17_keyframes/")
-    visualise = False
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--source_image_dir", type=Path, required=True)
     parser.add_argument("--output_image_dir", type=Path, required=True)
