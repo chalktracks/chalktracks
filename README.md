@@ -24,6 +24,11 @@ The envisaged system consists of a motorised toy dump truck with a forward-facin
 <img src="doc/20240627_172255.jpg" width="400"/> <img src="doc/20240707_152512.jpg" width="400"/> 
 
 **Figures:** First prototype truck, with camera taped on. 
+<br/>
+
+https://github.com/user-attachments/assets/9ad01d09-88ea-4e09-aedb-314ebd87270b
+
+**Video:** First prototype chalk segmentation, video captured on a hand-held smartphone, segmentation model trained on [roboflow](https://roboflow.com/).
 
 ## Contributors
 <a href="https://github.com/chalktracks/chalktracks/graphs/contributors">
