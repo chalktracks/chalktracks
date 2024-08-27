@@ -99,7 +99,7 @@ Code will be added and steps will be documented as the project is built out.
     1) Run script to read raw images and blur faces
     2) *manual step*: review output images, manually delete any that failed to blur.
 
-1) Labelling
+1) [Labelling](https://github.com/chalktracks/chalktracks/wiki/Label-Tool)
 
     Manually annotate the dataset with chalk line lables. Here a simple [labelling tool](https://github.com/chalktracks/chalktracks/wiki/Label-Tool) has been developed to annotate the chalk lines with a touch screen interface. After annotation, labels must be converted to appropriate format for training.
 
