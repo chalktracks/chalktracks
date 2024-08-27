@@ -101,7 +101,11 @@ Code will be added and steps will be documented as the project is built out.
 
 1) Labelling
 
-    Manually annotate the dataset with chalk line lables. Here a simple [labelling tool](chalk/label_tool/README.md) has been developed to annotate the chalk lines with a touch screen interface. After annotation, labels must be converted to appropriate format for training.
+    Manually annotate the dataset with chalk line lables. Here a simple [labelling tool](https://github.com/chalktracks/chalktracks/wiki/Label-Tool) has been developed to annotate the chalk lines with a touch screen interface. After annotation, labels must be converted to appropriate format for training.
+
+    https://github.com/user-attachments/assets/9c7b821c-f266-4acc-9cbd-2b938dd8f299
+
+    **Video:** Demo showing the process of labelling chalk lines with the label tool.
 
     <img src="doc/labelled_images.webp"/>
 
