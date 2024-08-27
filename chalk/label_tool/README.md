@@ -2,7 +2,9 @@
 
 A web interface for labelling images containing chalk lines.
 
-![label_tool_screenshot](../../doc/label_tool.png)
+https://github.com/user-attachments/assets/525ca4f9-dd9f-43bc-a460-a5646528fd3e
+
+**Video:** demo of the workflow for manually labelling chalk lines with label tool.
 
 Consists of an html page [label_tool.html](./static/label_tool.html) served by a simple flask app [label_tool.py](./label_tool.py).
 
