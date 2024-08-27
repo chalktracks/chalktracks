@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Segmentation Mask Drawing</title>
+    <style>
+        /* body { display: flex; flex-direction: column; align-items: center; height: 100vh; margin: 0; } */
+        canvas { border: 1px solid black; touch-action: none; position: absolute; top: 50; left: 0; }
+        .controls { margin-top: 10px; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    
+
+<div class="controls">
+    <button id="undoButton">Undo</button>
+    <button id="skipButton">Skip</button>
+    <button id="saveButton">Save</button>
+</div>
+
+<div id="container">
+    <canvas id="imageCanvas"></canvas>
+    <canvas id="drawCanvas"></canvas>
+</div>
+
+<script>
+    const imageCanvas = document.getElementById('imageCanvas');
+    const drawCanvas = document.getElementById('drawCanvas');
+    const imageCtx = imageCanvas.getContext('2d');
+    const drawCtx = drawCanvas.getContext('2d');
+    const undoButton = document.getElementById('undoButton');
+    const saveButton = document.getElementById('saveButton');
+    const skipButton = document.getElementById('skipButton');
+
+    let isDrawing = false;
+    let lastX = 0;
+    let lastY = 0;
+    let history = [];
+    let currentImage = '';
+
+    function loadNextImage() {
+        fetch('/next_image')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                currentImage = data.filename;
+                const img = new Image();
+                img.onload = function() {
+                    imageCanvas.width = img.width;
+                    imageCanvas.height = img.height;
+                    drawCanvas.width = img.width;
+                    drawCanvas.height = img.height;
+                    imageCtx.drawImage(img, 0, 0);
+                    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+                    history = [drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height)];
+                }
+                img.src = `/images/${data.filename}`;
+            });
+    }
+
+    function draw(e) {
+        if (!isDrawing) return;
+        drawCtx.strokeStyle = 'red';
+        drawCtx.lineWidth = 15;
+        drawCtx.lineJoin = 'round';
+        drawCtx.lineCap = 'round';
+
+        drawCtx.beginPath();
+        drawCtx.moveTo(lastX, lastY);
+        drawCtx.lineTo(e.offsetX, e.offsetY);
+        drawCtx.stroke();
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+    }
+
+    function startDrawing(e) {
+        isDrawing = true;
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+        saveState();
+    }
+
+    function endDrawing() {
+        isDrawing = false;
+    }
+
+    function saveState() {
+        history.push(drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
+        if (history.length > 10) history.shift(); // Limit history to last 10 states
+    }
+
+    function undoLast() {
+        if (history.length > 1) {
+            drawCtx.putImageData(history.pop(), 0, 0);
+        }
+    }
+
+    function saveImage() {
+        // Create a new canvas to capture only the drawn elements
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        tempCanvas.width = drawCanvas.width;
+        tempCanvas.height = drawCanvas.height;
+
+        // Fill the temp canvas with black background
+        tempCtx.fillStyle = 'black';
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+        // Draw only the drawn elements (red lines) from the draw canvas
+        tempCtx.drawImage(drawCanvas, 0, 0);
+
+        // Convert canvas to blob and then to base64
+        tempCanvas.toBlob(blob => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64data = reader.result.split(',')[1];
+                fetch('/save_segmentation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image_name: currentImage,
+                        segmentation_data: base64data,
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        loadNextImage();
+                    } else {
+                        alert('Error saving segmentation');
+                    }
+                });
+            };
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    function skipImage() {
+        fetch('/skip_image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                image_name: currentImage,
+            }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                loadNextImage();
+            } else {
+                alert('Error skipping image');
+            }
+        });
+    }
+
+    undoButton.addEventListener('click', undoLast);
+    saveButton.addEventListener('click', saveImage);
+    skipButton.addEventListener('click', skipImage);
+
+    drawCanvas.addEventListener('mousedown', (e) => {
+        startDrawing(e);
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+    });
+
+    drawCanvas.addEventListener('mousemove', draw);
+    drawCanvas.addEventListener('mouseup', endDrawing);
+    drawCanvas.addEventListener('mouseout', endDrawing);
+
+    drawCanvas.addEventListener('touchstart', (e) => {
+        const touch = e.touches[0];
+        const rect = drawCanvas.getBoundingClientRect();
+        startDrawing({
+            offsetX: touch.clientX - rect.left,
+            offsetY: touch.clientY - rect.top
+        });
+    });
+
+    drawCanvas.addEventListener('touchmove', (e) => {
+        const touch = e.touches[0];
+        const rect = drawCanvas.getBoundingClientRect();
+        draw({
+            offsetX: touch.clientX - rect.left,
+            offsetY: touch.clientY - rect.top
+        });
+        e.preventDefault();
+    });
+
+    drawCanvas.addEventListener('touchend', endDrawing);
+    drawCanvas.addEventListener('touchcancel', endDrawing);
+
+    window.onload = loadNextImage;
+</script>
+
+</body>
+</html>

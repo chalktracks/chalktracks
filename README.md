@@ -85,11 +85,13 @@ Code will be added and steps will be documented as the project is built out.
 
     TODO: ffmpeg command
 
-1) Key framing
+1) [Key framing](https://github.com/chalktracks/chalktracks/wiki/Keyframing)
 
     To reduce labelling workload, filter to a keyframe sequence where images are removed if they are too similar to the previous keyframe.
 
     `python -m chalk.key_frame --source_image_dir datasets/test_driveway/0_raw_images/ --output_image_dir /tmp/1_keyframes --visualise`
+
+    ![keyframe example](doc/keyframes.png)
 
 1) Anonymisation 
 
@@ -99,7 +101,7 @@ Code will be added and steps will be documented as the project is built out.
 
 1) Labelling
 
-    Manually annotate the dataset with chalk line lables. Here a simple labelling tool has been developed to annotate the chalk lines with a touch screen interface. After annotation, labels must be converted to appropriate format for training.
+    Manually annotate the dataset with chalk line lables. Here a simple [labelling tool](chalk/label_tool/README.md) has been developed to annotate the chalk lines with a touch screen interface. After annotation, labels must be converted to appropriate format for training.
 
     <img src="doc/labelled_images.webp"/>
 
@@ -132,12 +134,15 @@ dataset_name/
 └── 4_split
     ├── test
     │   ├── images
-    │   └── labels
+    │   ├── labels
+    │   └── masks
     ├── train
     │   ├── images
     │   └── labels
+    │   └── masks
     └── val
         ├── images
         └── labels
+    │   └── masks
 
 ```
