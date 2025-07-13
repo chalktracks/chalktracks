@@ -5,9 +5,9 @@ import argparse
 import cv2
 import matplotlib.pyplot as plt
 from pathlib import Path
-from shutil import copy
 from skimage.metrics import structural_similarity as ssim
 from tqdm import tqdm
+from chalk.utils import put_files_into_dir
 
 
 def main(source_image_dir:Path, output_image_dir:Path, visualise:bool, symlink:bool):
@@ -15,13 +15,6 @@ def main(source_image_dir:Path, output_image_dir:Path, visualise:bool, symlink:b
     if visualise:
         plt.ion()
 
-    def save_keyframe(keyframe_path:Path):
-        target_path = output_image_dir/keyframe_path.name
-        if symlink:
-            keyframe_relative_path = keyframe_path.absolute().relative_to(target_path.parent.absolute(), walk_up=True)
-            target_path.symlink_to(keyframe_relative_path)
-        else:
-            copy(keyframe_path, output_image_dir)
 
 
     if not output_image_dir.exists():
@@ -34,6 +27,7 @@ def main(source_image_dir:Path, output_image_dir:Path, visualise:bool, symlink:b
     #  iterate through images in sequence until ssim from keyframe to current image is below a threshold value.
     #  at this point, set the current image as the latest keyframe
 
+    keyframe_paths = []
     ssim_vals = []
     ssim_history_len = 50
     current_keyframe = None
@@ -74,7 +68,7 @@ def main(source_image_dir:Path, output_image_dir:Path, visualise:bool, symlink:b
             ssim_to_keyframe = ssim(img, current_keyframe)
             if ssim_to_keyframe < ssim_threshold:
                 current_keyframe = img
-                save_keyframe(source_image_file)
+                keyframe_paths.append(source_image_file)
 
                 if visualise:
                     kf_ax.set_data(img_bgr)
@@ -97,6 +91,7 @@ def main(source_image_dir:Path, output_image_dir:Path, visualise:bool, symlink:b
                 ssim_plt_ax.set_xlim(left=-ssim_history_len, right=0)
                 plt.show()
                 plt.pause(0.001)
+    put_files_into_dir(keyframe_paths, output_image_dir, symlink)
 
 
 if __name__ == "__main__":
@@ -106,4 +101,4 @@ if __name__ == "__main__":
     parser.add_argument("--visualise", action="store_true", help="Plot keyframes and ssim metric while processing")
     parser.add_argument("--symlink", action="store_true", help="Create symlinks in output dir rather than copying files")
     args = parser.parse_args()
-    main(args.source_image_dir, args.output_image_dir, args.visualise, args.simlink)
+    main(args.source_image_dir, args.output_image_dir, args.visualise, args.symlink)
