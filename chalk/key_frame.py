@@ -10,10 +10,19 @@ from skimage.metrics import structural_similarity as ssim
 from tqdm import tqdm
 
 
-def main(source_image_dir, output_image_dir, visualise):
+def main(source_image_dir:Path, output_image_dir:Path, visualise:bool, symlink:bool):
 
     if visualise:
         plt.ion()
+
+    def save_keyframe(keyframe_path:Path):
+        target_path = output_image_dir/keyframe_path.name
+        if symlink:
+            keyframe_relative_path = keyframe_path.absolute().relative_to(target_path.parent.absolute(), walk_up=True)
+            target_path.symlink_to(keyframe_relative_path)
+        else:
+            copy(keyframe_path, output_image_dir)
+
 
     if not output_image_dir.exists():
         output_image_dir.mkdir(parents=True)
@@ -25,7 +34,6 @@ def main(source_image_dir, output_image_dir, visualise):
     #  iterate through images in sequence until ssim from keyframe to current image is below a threshold value.
     #  at this point, set the current image as the latest keyframe
 
-    keyframe_files = []
     ssim_vals = []
     ssim_history_len = 50
     current_keyframe = None
@@ -46,7 +54,6 @@ def main(source_image_dir, output_image_dir, visualise):
             # take current frame as first keyframe
             # also setup plotting
             current_keyframe = img
-            keyframe_files.append(source_image_file)
 
             if visualise:
                 plt.subplots(3,1)
@@ -67,8 +74,7 @@ def main(source_image_dir, output_image_dir, visualise):
             ssim_to_keyframe = ssim(img, current_keyframe)
             if ssim_to_keyframe < ssim_threshold:
                 current_keyframe = img
-                keyframe_files.append(source_image_file)
-                copy(source_image_file, output_image_dir)
+                save_keyframe(source_image_file)
 
                 if visualise:
                     kf_ax.set_data(img_bgr)
@@ -98,5 +104,6 @@ if __name__ == "__main__":
     parser.add_argument("--source_image_dir", type=Path, required=True)
     parser.add_argument("--output_image_dir", type=Path, required=True)
     parser.add_argument("--visualise", action="store_true", help="Plot keyframes and ssim metric while processing")
+    parser.add_argument("--symlink", action="store_true", help="Create symlinks in output dir rather than copying files")
     args = parser.parse_args()
-    main(args.source_image_dir, args.output_image_dir, args.visualise)
+    main(args.source_image_dir, args.output_image_dir, args.visualise, args.simlink)
