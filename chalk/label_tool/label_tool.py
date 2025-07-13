@@ -8,6 +8,7 @@ import shutil
 import random
 import base64
 
+from chalk.utils import put_files_into_dir
 
 @dataclass
 class DirectoryConfig:
@@ -55,17 +56,19 @@ def index():
 @app.route('/next_image')
 def next_image():
     input_images_dir:Path = app.config["directory_config"].input_images_dir
-    images = [f for f in input_images_dir.iterdir() if f.is_file()]
-    if not images:
+    output_images_dir:Path = app.config["directory_config"].output_images_dir
+    processed_image_names = [f.name for f in output_images_dir.iterdir() if f.is_file()]
+    images_to_process = [f for f in input_images_dir.iterdir() if f.is_file() and f.name not in processed_image_names]
+    if not images_to_process:
         return jsonify({"error": "No images left"}), 404
-    image = random.choice(images)
+    image = random.choice(images_to_process)
     
     return jsonify({"filename": image.name})
 
 @app.route('/images/<filename>')
 def get_image(filename):
     input_images_dir = app.config["directory_config"].input_images_dir
-    return send_from_directory(input_images_dir, filename)
+    return send_from_directory(input_images_dir.absolute(), filename)
 
 @app.route('/save_segmentation', methods=['POST'])
 def save_segmentation():
@@ -74,7 +77,7 @@ def save_segmentation():
     print(image_name)
     segmentation_data = data['segmentation_data']
     input_image_file:Path = app.config["directory_config"].input_images_dir/image_name
-    output_image_file:Path = app.config["directory_config"].output_images_dir/image_name
+    output_image_dir:Path = app.config["directory_config"].output_images_dir
     output_mask_file:Path = app.config["directory_config"].output_masks_dir/ image_name
     output_label_file = app.config["directory_config"].output_labels_dir/ f"{image_name.stem}.txt"    
     
@@ -87,18 +90,18 @@ def save_segmentation():
     # Save yolo-format label
     mask_to_yolo_label(output_mask_file, output_label_file)
     
-    shutil.move(input_image_file, output_image_file)
+    put_files_into_dir([input_image_file],output_image_dir, symlink=True)
 
     return jsonify({"success": True})
 
 
-@app.route('/skip_image', methods=['POST'])
-def skip_image():
+@app.route('/remove_image', methods=['POST'])
+def remove_image():
     data = request.json
     image_name = data['image_name']
     image_path:Path = app.config["directory_config"].input_images_dir / image_name
 
-    # skipped images are simply deleted from the input directory
+    # remove image from the input directory
     image_path.unlink()
 
     return jsonify({"success": True})

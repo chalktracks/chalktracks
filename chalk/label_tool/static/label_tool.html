@@ -16,8 +16,9 @@
 
 <div class="controls">
     <button id="undoButton">Undo</button>
-    <button id="skipButton">Skip</button>
     <button id="saveButton">Save</button>
+    <button id="removeButton">Remove from dataset</button>
+
 </div>
 
 <div id="container">
@@ -32,7 +33,7 @@
     const drawCtx = drawCanvas.getContext('2d');
     const undoButton = document.getElementById('undoButton');
     const saveButton = document.getElementById('saveButton');
-    const skipButton = document.getElementById('skipButton');
+    const removeButton = document.getElementById('removeButton');
 
     let isDrawing = false;
     let lastX = 0;
@@ -141,8 +142,8 @@
         });
     }
 
-    function skipImage() {
-        fetch('/skip_image', {
+    function removeImage() {
+        fetch('/remove_image', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -156,14 +157,14 @@
             if (data.success) {
                 loadNextImage();
             } else {
-                alert('Error skipping image');
+                alert('Error removing image');
             }
         });
     }
 
     undoButton.addEventListener('click', undoLast);
     saveButton.addEventListener('click', saveImage);
-    skipButton.addEventListener('click', skipImage);
+    removeButton.addEventListener('click', removeImage);
 
     drawCanvas.addEventListener('mousedown', (e) => {
         startDrawing(e);
