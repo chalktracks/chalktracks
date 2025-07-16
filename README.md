@@ -15,7 +15,7 @@ Introducing 🎉 Chalk Tracks! 🎉
 🚚 This project aims to build a toy dump truck that follows tracks drawn in chalk. It will drive where you draw!
 
 We're building this in order to:
-* Explore a product idea
+* Explore a concept for a new toy
 * Develop an ML-based portfolio project
 * Keep the kids entertained!
 
