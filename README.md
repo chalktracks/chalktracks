@@ -40,7 +40,7 @@ This project will use the [Sipeed MaixCAM edge AI camera](https://wiki.sipeed.co
 <img src="doc/Sipeed-MaixCAM-02.jpg" width="300"/>
 
 This was chosen based on:
-* **Cost** - this is a very low cost device for running segmentation models onboard. This may be beneficial if this project continues towards productisation - the market for toys is very price sentive.
+* **Cost** - this is a very low cost device for running segmentation models onboard. 
 * **Capability** - despite the cost, the device appears sufficiently performant to run segmentation at a sufficient rate (1TOPS INT8 NPU)
 * **Support** - The device appears sufficiently supported with docs, examples and a community forum, to get up and running without too much difficulty. 
 
