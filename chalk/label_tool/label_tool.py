@@ -17,7 +17,9 @@ class DirectoryConfig:
     output_masks_dir: Path
     output_labels_dir: Path
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static'))
+print(f"Static folder path: {app.static_folder}") # Add this line
+
 
 def mask_to_yolo_label(maskfile:Path, labelfile:Path):
     """
@@ -27,7 +29,7 @@ def mask_to_yolo_label(maskfile:Path, labelfile:Path):
         https://github.com/orgs/ultralytics/discussions/8528#discussioncomment-8868637
     """
 
-    img = cv2.imread(maskfile)
+    img = cv2.imread(str(maskfile))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     height, width = img.shape
     _, img = cv2.threshold(img, 1, 255, 0)
@@ -51,7 +53,7 @@ def mask_to_yolo_label(maskfile:Path, labelfile:Path):
 
 @app.route('/')
 def index():
-    return send_from_directory('static', 'label_tool.html')
+    return send_from_directory(app.static_folder, 'label_tool.html')
 
 @app.route('/next_image')
 def next_image():

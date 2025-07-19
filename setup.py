@@ -20,4 +20,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     url='https://github.com/chalktracks/chalktracks',
+    package_data={
+        "chalk" : ["label_tool/static/*"]
+    }
 )
