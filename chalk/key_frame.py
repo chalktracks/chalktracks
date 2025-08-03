@@ -10,7 +10,7 @@ from tqdm import tqdm
 from chalk.utils import put_files_into_dir
 
 
-def main(source_image_dir:Path, output_image_dir:Path, visualise:bool, symlink:bool):
+def main(source_image_dir:Path, output_image_dir:Path, ssim_threshold:float, visualise:bool, symlink:bool):
 
     if visualise:
         plt.ion()
@@ -31,8 +31,6 @@ def main(source_image_dir:Path, output_image_dir:Path, visualise:bool, symlink:b
     ssim_vals = []
     ssim_history_len = 50
     current_keyframe = None
-
-    ssim_threshold = 0.5
 
     print("Begin filtering keyframes")
     for source_image_file in tqdm(sorted(source_images)):
