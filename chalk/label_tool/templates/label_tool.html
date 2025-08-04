@@ -5,41 +5,112 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Segmentation Mask Drawing</title>
     <style>
-        /* body { display: flex; flex-direction: column; align-items: center; height: 100vh; margin: 0; } */
-        canvas { border: 1px solid black; touch-action: none; position: absolute; top: 50; left: 0; }
-        .controls { margin-top: 10px; }
-        button { margin: 5px; padding: 10px; }
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .controls {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* Styles for interactive elements (buttons and select) */
+        button, select {
+            margin: 0 5px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f8f8f8;
+            cursor: pointer;
+        }
+
+        /* Separate styles for the label - NO border or background */
+        label {
+            margin: 0 5px;
+            padding: 10px 0; /* Adjust padding to align vertically */
+            cursor: default;
+        }
+        
+        select {
+            min-width: 150px;
+        }
+
+        #canvas-wrapper {
+            position: relative;
+        }
+
+        canvas {
+            border: 1px solid black;
+            touch-action: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
     </style>
 </head>
 <body>
     
-
-<div class="controls">
-    <button id="undoButton">Undo</button>
-    <button id="saveButton">Save</button>
-    <button id="removeButton">Remove from dataset</button>
-
-</div>
-
-<div id="container">
-    <canvas id="imageCanvas"></canvas>
-    <canvas id="drawCanvas"></canvas>
+<div class="main-container">
+    <div id="controls-top" class="controls">
+        <button id="undoButton">Undo</button>
+        <button id="saveButton">Save</button>
+        <button id="removeButton">Remove</button>
+        <label for="classSelector">Class:</label>
+        <select id="classSelector">
+            {% for name, color in class_colors.items() %}
+            <option value="{{ name }}">{{ name.replace('_', ' ').title() }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div id="canvas-wrapper">
+        <canvas id="imageCanvas"></canvas>
+        <canvas id="drawCanvas"></canvas>
+    </div>
 </div>
 
 <script>
     const imageCanvas = document.getElementById('imageCanvas');
     const drawCanvas = document.getElementById('drawCanvas');
+    const controlsDiv = document.getElementById('controls-top');
+    const canvasWrapper = document.getElementById('canvas-wrapper');
     const imageCtx = imageCanvas.getContext('2d');
     const drawCtx = drawCanvas.getContext('2d');
     const undoButton = document.getElementById('undoButton');
     const saveButton = document.getElementById('saveButton');
     const removeButton = document.getElementById('removeButton');
+    const classSelector = document.getElementById('classSelector');
 
     let isDrawing = false;
     let lastX = 0;
     let lastY = 0;
     let history = [];
     let currentImage = '';
+
+    const classColors = {
+    {% for name, color in class_colors.items() %}
+        '{{ name }}': '{{ color }}',
+    {% endfor %}
+    };
+    
+    const scaleFactor = 2;
+    const baseLineWidth = 15;
+
+    // ensure drawn lines have exact specified RGB values
+    drawCtx.imageSmoothingEnabled = false;
 
     function loadNextImage() {
         fetch('/next_image')
@@ -52,11 +123,31 @@
                 currentImage = data.filename;
                 const img = new Image();
                 img.onload = function() {
-                    imageCanvas.width = img.width;
-                    imageCanvas.height = img.height;
-                    drawCanvas.width = img.width;
-                    drawCanvas.height = img.height;
-                    imageCtx.drawImage(img, 0, 0);
+                    const scaledWidth = img.width * scaleFactor;
+                    const scaledHeight = img.height * scaleFactor;
+                    
+                    // Set canvas pixel dimensions
+                    imageCanvas.width = scaledWidth;
+                    imageCanvas.height = scaledHeight;
+                    drawCanvas.width = scaledWidth;
+                    drawCanvas.height = scaledHeight;
+
+                    // Set the CSS dimensions of the canvases to match their pixel dimensions
+                    imageCanvas.style.width = `${scaledWidth}px`;
+                    imageCanvas.style.height = `${scaledHeight}px`;
+                    drawCanvas.style.width = `${scaledWidth}px`;
+                    drawCanvas.style.height = `${scaledHeight}px`;
+
+                    // Set the wrapper's dimensions to match the canvases
+                    canvasWrapper.style.width = `${scaledWidth}px`;
+                    canvasWrapper.style.height = `${scaledHeight}px`;
+                    
+                    // Center the controls div by giving it the same width as the image
+                    controlsDiv.style.width = `${scaledWidth}px`;
+
+                    imageCtx.imageSmoothingEnabled = false;
+                    imageCtx.drawImage(img, 0, 0, scaledWidth, scaledHeight);
+                    
                     drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
                     history = [drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height)];
                 }
@@ -66,8 +157,11 @@
 
     function draw(e) {
         if (!isDrawing) return;
-        drawCtx.strokeStyle = 'red';
-        drawCtx.lineWidth = 15;
+        const selectedClass = classSelector.value;
+        drawCtx.strokeStyle = classColors[selectedClass];
+        
+        drawCtx.lineWidth = baseLineWidth * scaleFactor;
+        
         drawCtx.lineJoin = 'round';
         drawCtx.lineCap = 'round';
 
@@ -77,7 +171,7 @@
         drawCtx.stroke();
         [lastX, lastY] = [e.offsetX, e.offsetY];
     }
-
+    
     function startDrawing(e) {
         isDrawing = true;
         [lastX, lastY] = [e.offsetX, e.offsetY];
@@ -90,7 +184,7 @@
 
     function saveState() {
         history.push(drawCtx.getImageData(0, 0, drawCanvas.width, drawCanvas.height));
-        if (history.length > 10) history.shift(); // Limit history to last 10 states
+        if (history.length > 10) history.shift();
     }
 
     function undoLast() {
@@ -100,21 +194,18 @@
     }
 
     function saveImage() {
-        // Create a new canvas to capture only the drawn elements
+        const selectedClass = classSelector.value;
         const tempCanvas = document.createElement('canvas');
         const tempCtx = tempCanvas.getContext('2d');
         
         tempCanvas.width = drawCanvas.width;
         tempCanvas.height = drawCanvas.height;
 
-        // Fill the temp canvas with black background
         tempCtx.fillStyle = 'black';
         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-        // Draw only the drawn elements (red lines) from the draw canvas
         tempCtx.drawImage(drawCanvas, 0, 0);
 
-        // Convert canvas to blob and then to base64
         tempCanvas.toBlob(blob => {
             const reader = new FileReader();
             reader.onloadend = () => {
@@ -127,11 +218,13 @@
                     body: JSON.stringify({
                         image_name: currentImage,
                         segmentation_data: base64data,
+                        class_name: selectedClass,
                     }),
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
+                        classSelector.value = "{{ class_colors.keys()|first }}";
                         loadNextImage();
                     } else {
                         alert('Error saving segmentation');
