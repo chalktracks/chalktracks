@@ -22,5 +22,10 @@ setup(
     url='https://github.com/chalktracks/chalktracks',
     package_data={
         "chalk" : ["label_tool/templates/*"]
-    }
+    },
+    entry_points={
+        'console_scripts': [
+            'chalk=chalk.cli:main',
+        ],
+    },
 )

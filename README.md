@@ -150,3 +150,17 @@ dataset_name/
     │   └── masks
 
 ```
+
+
+
+## CLI Auto-Discovery
+
+The project includes a dynamic CLI that automatically discovers commands from any module with `main(args)` and `add_arg_parser(parser)` functions. Commands are organized by module location (preprocess, model, util) and can be run via:
+
+```bash
+chalk <command> [args]          # After pip install
+python -m chalk.cli <command>   # Direct module usage
+```
+
+To add a new command, simply create a module in the appropriate category with the required functions - it will automatically appear in `chalk --help`.
+See [chalk/cli.py](./chalk/cli.py) for implementation.
