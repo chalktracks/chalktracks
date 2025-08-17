@@ -31,6 +31,13 @@ def main(args):
     seq_output_dir = sequence_dir / seq_name / "0_raw_images"
     seq_output_dir.mkdir(parents=True, exist_ok=True)
     
+    # Create additional directories for later processing steps
+    keyframes_dir = sequence_dir / seq_name / "1_keyframes"
+    keyframes_dir.mkdir(parents=True, exist_ok=True)
+    
+    labelled_dir = sequence_dir / seq_name / "2_labelled"
+    labelled_dir.mkdir(parents=True, exist_ok=True)
+    
     # Find image files (common formats)
     image_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.tif']
     image_files = []
