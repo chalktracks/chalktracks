@@ -38,6 +38,11 @@ def main(args):
     labelled_dir = sequence_dir / seq_name / "2_labelled"
     labelled_dir.mkdir(parents=True, exist_ok=True)
     
+    # Create subdirectories under 2_labelled
+    (labelled_dir / "images").mkdir(parents=True, exist_ok=True)
+    (labelled_dir / "labels").mkdir(parents=True, exist_ok=True)
+    (labelled_dir / "masks").mkdir(parents=True, exist_ok=True)
+    
     # Find image files (common formats)
     image_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.tiff', '.tif']
     image_files = []
