@@ -164,3 +164,7 @@ python -m chalk.cli <command>   # Direct module usage
 
 To add a new command, simply create a module in the appropriate category with the required functions - it will automatically appear in `chalk --help`.
 See [chalk/cli.py](./chalk/cli.py) for implementation.
+
+---
+
+**Note:** As of August 2025 I've started using GitHub Copilot for this project. Code added after this date may be heavily AI-generated. 🤖
