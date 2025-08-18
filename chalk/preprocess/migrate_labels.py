@@ -5,6 +5,7 @@ def add_arg_parser(parser: argparse.ArgumentParser):
     parser.add_argument("data_dir", help="Directory containing data to migrate labels.")
 
 def main(args):
+    """Convert labels between different annotation formats."""
     print(f"Migrating labels in {args.data_dir}...")
     # Your processing logic here
 

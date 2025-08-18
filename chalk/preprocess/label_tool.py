@@ -5,6 +5,7 @@ def add_arg_parser(parser: argparse.ArgumentParser):
     parser.add_argument("image_dir", help="Directory containing images to label.")
 
 def main(args):
+    """Launch the interactive labeling tool for annotating images."""
     print(f"Launching label tool for {args.image_dir}...")
     # Your processing logic here
 

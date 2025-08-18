@@ -5,6 +5,7 @@ def add_arg_parser(parser: argparse.ArgumentParser):
     parser.add_argument("image_dir", help="Directory containing labelled images.")
 
 def main(args):
+    """Validate and check consistency of image labels."""
     print(f"Checking labels in {args.image_dir}...")
     # Your processing logic here
 

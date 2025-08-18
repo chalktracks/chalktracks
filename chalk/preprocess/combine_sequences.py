@@ -6,6 +6,7 @@ def add_arg_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--combined-dir", required=True, help="Directory to store combined sequences.")
 
 def main(args):
+    """Combine multiple image sequences into a single dataset."""
     print(f"Combining sequences from {args.sequence_dir} into {args.combined_dir}...")
     # Your processing logic here
 

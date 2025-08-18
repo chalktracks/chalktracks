@@ -6,6 +6,7 @@ def add_arg_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--image-dir", required=True, help="Directory containing images to filter.")
 
 def main(args):
+    """Filter images based on structural similarity threshold."""
     print(f"Filtering images in {args.image_dir} with SSIM threshold {args.ssim_threshold}...")
     # Your processing logic here
 

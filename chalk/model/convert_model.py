@@ -6,6 +6,7 @@ def add_arg_parser(parser: argparse.ArgumentParser):
     parser.add_argument("output_dir", help="Directory to save converted model.")
 
 def main(args):
+    """Convert trained model to target deployment format."""
     print(f"Converting model from {args.input_dir} to {args.output_dir}...")
     # Your processing logic here
 

@@ -9,7 +9,7 @@ def add_arg_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--to-dir", required=True, help="Destination directory for symlinks")
 
 def main(args):
-    """Create symlinks to images from source directory in destination directory."""
+    """Create symlinks to images from source to destination directory."""
     from_dir = Path(args.from_dir)
     to_dir = Path(args.to_dir)
     

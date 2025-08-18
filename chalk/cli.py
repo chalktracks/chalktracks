@@ -1,6 +1,7 @@
 import argparse
 import importlib
 import pkgutil
+import sys
 from pathlib import Path
 import chalk
 
@@ -50,6 +51,42 @@ def discover_commands():
     return commands
 
 
+def print_custom_help(commands):
+    """Print custom help with category grouping."""
+    print("usage: chalk [-h] COMMAND ...")
+    print()
+    print("Chalk: A command-line tool for chalk line following dataset preparation and model training.")
+    print()
+    print("positional arguments:")
+    print("  COMMAND             Available commands (organized by category)")
+    
+    # Group commands by category
+    categories = {}
+    for cmd_name, cmd_info in commands.items():
+        category = cmd_info['category']
+        if category not in categories:
+            categories[category] = []
+        categories[category].append((cmd_name, cmd_info))
+    
+    # Print each category
+    for category in sorted(categories.keys()):
+        print(f"\n    [{category}]")
+        for cmd_name, cmd_info in sorted(categories[category]):
+            module = cmd_info['module']
+            # Get description from main function docstring
+            description = f"{cmd_name} command"
+            if hasattr(module, 'main') and hasattr(module.main, '__doc__') and module.main.__doc__:
+                description = module.main.__doc__.strip().split('\n')[0]
+            
+            print(f"        {cmd_name:<18} {description}")
+    
+    print()
+    print("options:")
+    print("  -h, --help          show this help message and exit")
+    print()
+    print("Use 'chalk COMMAND -h' for detailed help on a specific command.")
+
+
 def main():
     """Main CLI entry point with automatic command discovery."""
     
@@ -59,15 +96,21 @@ def main():
     if not commands:
         print("No commands found!")
         return 1
-    
+
+    # Check if help is requested
+    if len(sys.argv) == 1 or '--help' in sys.argv or '-h' in sys.argv:
+        if len(sys.argv) == 1 or (len(sys.argv) == 2 and sys.argv[1] in ['--help', '-h']):
+            print_custom_help(commands)
+            return 0
+
     parser = argparse.ArgumentParser(
         description="Chalk: A command-line tool for chalk line following dataset preparation and model training.",
-        formatter_class=argparse.RawDescriptionHelpFormatter
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        add_help=False  # We'll handle help ourselves
     )
     
     subparsers = parser.add_subparsers(
         dest="command",
-        help="Available commands (organized by category)",
         required=True,
         metavar="COMMAND"
     )
@@ -80,17 +123,17 @@ def main():
             categories[category] = []
         categories[category].append((cmd_name, cmd_info))
     
-    # Create subparsers for each command
+    # Create subparsers for each command (without category prefix in help)
     for category in sorted(categories.keys()):
         for cmd_name, cmd_info in sorted(categories[category]):
             module = cmd_info['module']
             
-            # Get help text from module docstring if available
-            help_text = f"[{category}] "
-            if hasattr(module, '__doc__') and module.__doc__:
-                help_text += module.__doc__.strip().split('\n')[0]
+            # Get short description from main function's docstring (no category prefix)
+            help_text = ""
+            if hasattr(module, 'main') and hasattr(module.main, '__doc__') and module.main.__doc__:
+                help_text = module.main.__doc__.strip().split('\n')[0]
             else:
-                help_text += f"{cmd_name} command"
+                help_text = f"{cmd_name} command"
             
             # Create subparser for this command
             cmd_parser = subparsers.add_parser(
@@ -115,7 +158,5 @@ def main():
     except Exception as e:
         print(f"Error executing {args.command}: {e}")
         return 1
-
-
 if __name__ == "__main__":
     exit(main())

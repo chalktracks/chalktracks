@@ -6,6 +6,7 @@ def add_arg_parser(parser: argparse.ArgumentParser):
     parser.add_argument("params_yaml", help="Path to params.yaml file.")
 
 def main(args):
+    """Train a segmentation model using the provided dataset."""
     print(f"Training model with data in {args.data_dir} and params {args.params_yaml}...")
     # Your processing logic here
 
