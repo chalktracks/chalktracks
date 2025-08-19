@@ -89,7 +89,7 @@ Code will be added and steps will be documented as the project is built out.
 
     To reduce labelling workload, filter to a keyframe sequence where images are removed if they are too similar to the previous keyframe.
 
-    `python -m chalk.key_frame --source_image_dir datasets/test_driveway/0_raw_images/ --output_image_dir /tmp/1_keyframes --visualise`
+    `chalk similarity_filter --ssim-threshold 0.8 --image-dir data/sequences/sequence_0/1_keyframes/`
 
     ![keyframe example](doc/keyframes.png)
 
