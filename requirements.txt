@@ -6,3 +6,7 @@ opencv-python
 scikit-image
 tqdm
 ultralytics
+
+# Development dependencies
+pytest>=6.0.0
+pytest-cov
