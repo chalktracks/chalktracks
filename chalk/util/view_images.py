@@ -36,7 +36,8 @@ def create_chalk_color_scheme():
     for seg_class in segmentation_classes:
         mask_targets_colors.append({
             "intTarget": seg_class.index,
-            "color": rgb_to_hex(seg_class.render_color)
+            "color": rgb_to_hex(seg_class.render_color),
+            "label": seg_class.name,  # Add label for better display
         })
     
     # Create the color scheme
@@ -125,6 +126,49 @@ def create_fiftyone_dataset(structure: dict, dataset_name: str):
                 labels_path=structure["masks_path"],
                 name=dataset_name,
             )
+            
+            # Add class information after dataset creation
+            from chalk import segmentation_classes
+            
+            # Create classes list ordered by index
+            classes = [""] * len(segmentation_classes)
+            for seg_class in segmentation_classes:
+                classes[seg_class.index] = seg_class.name
+            
+            print(f"Using segmentation classes: {classes}")
+            
+            # Try to set class information on the dataset
+            try:
+                # Method 1: Set on the dataset's default mask targets
+                if hasattr(dataset, 'default_mask_targets'):
+                    dataset.default_mask_targets = {i: name for i, name in enumerate(classes)}
+                    
+                # Method 2: Set on the segmentation field if it exists
+                field_schema = dataset.get_field_schema()
+                segmentation_fields = [name for name, field in field_schema.items() 
+                                     if hasattr(field, 'document_type') and 
+                                     'Segmentation' in str(field.document_type)]
+                
+                if segmentation_fields:
+                    field_name = segmentation_fields[0]  # Use first segmentation field
+                    print(f"Found segmentation field: {field_name}")
+                    
+                    # Update each sample's segmentation field with class info
+                    for sample in dataset:
+                        seg_field = sample[field_name]
+                        if seg_field and hasattr(seg_field, 'mask_targets'):
+                            if not seg_field.mask_targets:
+                                seg_field.mask_targets = {i: name for i, name in enumerate(classes) if name}
+                                sample.save()
+                    
+                    print(f"Updated segmentation field '{field_name}' with class names")
+                else:
+                    print("No segmentation fields found in dataset")
+                    
+                dataset.save()
+                
+            except Exception as e:
+                print(f"Warning: Could not set class names: {e}")
         elif structure["has_labels"]:
             # Object detection dataset with YOLO labels
             print(f"Loading YOLO dataset from {structure['images_path']} with labels from {structure['labels_path']}")
