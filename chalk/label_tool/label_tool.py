@@ -1,3 +1,4 @@
+import argparse
 from flask import Flask, send_from_directory, jsonify, request, render_template
 import cv2
 from dataclasses import dataclass
@@ -15,12 +16,19 @@ from chalk import segmentation_classes
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
 
+# must be in agreement with classColors from label_tool.html
+# class_colors = {
+#     'chalk': (255, 255, 255),
+#     'sign_stop': (255, 0, 0),
+#     'sign_turn': (0, 0, 255),
+#     'edge': (0, 255, 0)
+# }
 assert max(cls.index for cls in segmentation_classes) < 255, "error - only up to 255 classes supported due to storing of masks in uint8 image"
 
 
 class_colors = {
     cls.name: f"rgb({cls.render_color[0]}, {cls.render_color[1]}, {cls.render_color[2]})"
-    for cls in segmentation_classes if cls.name != "background"
+    for cls in segmentation_classes
 }
 
 rgb_to_int_dict = defaultdict(
@@ -28,6 +36,9 @@ rgb_to_int_dict = defaultdict(
     {cls.render_color : cls.index for cls in segmentation_classes}
 )
 
+# def rbg_to_int(mask_rgb):
+#     key = tuple(int(x) for x in mask_rgb)
+#     return rgb_to_int_dict[key]
 
 def rbg_to_int(mask_rgb):
     """
@@ -171,4 +182,34 @@ def remove_image():
 
     return jsonify({"success": True})
 
+def main():
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source_image_dir", type=Path, required=True)
+    parser.add_argument("--output_dir", type=Path, required=True)
+    args = parser.parse_args()
+
+    source_image_dir:Path = args.source_image_dir.expanduser()
+    output_dir:Path = args.output_dir.expanduser()
+
+    assert source_image_dir.exists() and source_image_dir.is_dir()
+    
+    directory_config = DirectoryConfig(
+        input_images_dir=source_image_dir,
+        output_images_dir=output_dir / 'images',
+        output_masks_dir=output_dir / 'masks',
+        output_labels_dir=output_dir / 'labels',
+    )
+
+    for dir in [
+            directory_config.output_images_dir,
+            directory_config.output_masks_dir,
+            directory_config.output_labels_dir,
+        ]:
+        dir.mkdir(exist_ok=True, parents=True)
+
+    app.config["directory_config"] = directory_config
+    app.run(debug=True, host='0.0.0.0')
+
+if __name__ == '__main__':
+    main()

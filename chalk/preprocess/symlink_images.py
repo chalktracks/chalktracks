@@ -1,6 +1,6 @@
 import argparse
 from pathlib import Path
-from chalk.utils import put_files_into_dir
+from chalk.util.utils import put_files_into_dir
 
 def add_arg_parser(parser: argparse.ArgumentParser):
     """Adds arguments for the symlink_images command."""
