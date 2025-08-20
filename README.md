@@ -51,12 +51,6 @@ The choice of model to use for chalk segmentation was primarily based on the cho
 <img src="doc/yolo-seg-demo.png" width="500"/>
 
 
-### Contributors
-<a href="https://github.com/chalktracks/chalktracks/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=chalktracks/chalktracks" />
-</a>
-
-
 ## Segmentation Model Training Workflow
 
 **WIP**

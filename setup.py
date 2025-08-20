@@ -15,7 +15,7 @@ setup(
     packages=find_packages(),
     python_requires='>=3.6',
     install_requires=dependencies,
-    author='Tim Fanselow, Rahul Mishra',
+    author='Tim Fanselow',
     description=description,
     long_description=readme,
     long_description_content_type="text/markdown",
