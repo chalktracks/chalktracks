@@ -50,6 +50,12 @@ The choice of model to use for chalk segmentation was primarily based on the cho
 
 <img src="doc/yolo-seg-demo.png" width="500"/>
 
+#### MLOps
+
+The project makes use of 
+* [Fiftyone](https://docs.voxel51.com/) (for dataset visualization)
+* [DVC](https://dvc.org/) (for dataset versioning)
+* [MLflow](https://mlflow.org/) (for experiment tracking)
 
 ## Segmentation Model Training Workflow
 
