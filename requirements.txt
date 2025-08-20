@@ -1,5 +1,6 @@
 attrs
 flask
+fiftyone
 matplotlib
 numpy
 opencv-python

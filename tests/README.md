@@ -9,6 +9,7 @@ This directory contains the test suite for the chalk line following project usin
 - `test_commands.py` - Tests for individual command implementations
 - `test_label_tool.py` - Tests for the interactive labeling tool (core functions only)
 - `test_similarity_filter.py` - Tests for SSIM-based image filtering
+- `test_view_images.py` - Tests for dataset visualization functionality
 
 ## Running Tests
 
