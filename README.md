@@ -53,9 +53,13 @@ The choice of model to use for chalk segmentation was primarily based on the cho
 #### MLOps
 
 The project makes use of 
-* [Fiftyone](https://docs.voxel51.com/) (for dataset visualization)
+* [Fiftyone](https://docs.voxel51.com/) (for dataset visualization) 
 * [DVC](https://dvc.org/) (for dataset versioning)
 * [MLflow](https://mlflow.org/) (for experiment tracking)
+
+<img src="https://user-images.githubusercontent.com/25985824/106288517-2422e000-6216-11eb-871d-26ad2e7b1e59.png" width="32" height="32" />
+<img src="https://upload.wikimedia.org/wikipedia/commons/a/af/Data_Version_Control._Official_Logo_by_Iterative.ai.png" width="32" height="32" /> 
+<img src="https://raw.githubusercontent.com/mlflow/mlflow/refs/heads/master/assets/logo.svg" width="32" height="32" />
 
 ## Segmentation Model Training Workflow
 
