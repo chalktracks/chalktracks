@@ -5,37 +5,39 @@ from pathlib import Path
 def add_arg_parser(parser: argparse.ArgumentParser):
     """Adds arguments for the add_sequence command."""
     parser.description = """Copy raw captured images (e.g., from camera) into a dataset sequence directory 
-    as the first step in creating and preprocessing an image sequence. Creates a new subdirectory 
-    under the sequence directory to organize the images by sequence name."""
+    as the first step in creating and preprocessing an image sequence. Creates the sequence directory 
+    structure with subdirectories for different processing stages."""
     parser.add_argument("--image-dir", required=True, help="Source directory containing raw images to copy")
-    parser.add_argument("--sequence-dir", required=True, help="Base directory where image sequences are stored")
-    parser.add_argument("--seq-name", required=True, help="Name for the new sequence (creates subdirectory)")
+    parser.add_argument("--sequence-dir", required=True, help="Full path to the new sequence directory (should not exist, but parent should exist)")
 
 def main(args):
     """Copy raw images into a new sequence directory for dataset preprocessing."""
     image_dir = Path(args.image_dir)
     sequence_dir = Path(args.sequence_dir)
-    seq_name = args.seq_name
     
     # Validate input directory
     if not image_dir.exists():
         print(f"Error: Image directory '{image_dir}' does not exist")
         return 1
     
-    # Validate sequence directory
-    if not sequence_dir.exists():
-        print(f"Error: Sequence directory '{sequence_dir}' does not exist")
+    # Validate sequence directory constraints
+    if sequence_dir.exists():
+        print(f"Error: Sequence directory '{sequence_dir}' already exists")
+        return 1
+    
+    if not sequence_dir.parent.exists():
+        print(f"Error: Parent directory '{sequence_dir.parent}' does not exist")
         return 1
     
     # Create sequence directory structure
-    seq_output_dir = sequence_dir / seq_name / "0_raw_images"
+    seq_output_dir = sequence_dir / "0_raw_images"
     seq_output_dir.mkdir(parents=True, exist_ok=True)
     
     # Create additional directories for later processing steps
-    keyframes_dir = sequence_dir / seq_name / "1_keyframes"
+    keyframes_dir = sequence_dir / "1_keyframes"
     keyframes_dir.mkdir(parents=True, exist_ok=True)
     
-    labelled_dir = sequence_dir / seq_name / "2_labelled"
+    labelled_dir = sequence_dir / "2_labelled"
     labelled_dir.mkdir(parents=True, exist_ok=True)
     
     # Create subdirectories under 2_labelled
@@ -69,8 +71,8 @@ def main(args):
         except Exception as e:
             print(f"Error copying {image_file.name}: {e}")
     
-    print(f"Successfully copied {copied_count} images to sequence '{seq_name}'")
-    print(f"Sequence created at: {seq_output_dir.parent}")
+    print(f"Successfully copied {copied_count} images to sequence '{sequence_dir.name}'")
+    print(f"Sequence created at: {sequence_dir}")
     return 0
 
 if __name__ == "__main__":

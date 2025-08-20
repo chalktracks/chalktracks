@@ -37,30 +37,29 @@ class TestPreprocessCommands:
         add_sequence_parser(parser)
         
         # Test with valid arguments
-        args = parser.parse_args(['--image-dir', 'source_dir', '--sequence-dir', 'dest_dir', '--seq-name', 'sequence_name'])
+        args = parser.parse_args(['--image-dir', 'source_dir', '--sequence-dir', 'dest_dir/sequence_name'])
         assert args.image_dir == 'source_dir'
-        assert args.sequence_dir == 'dest_dir'
-        assert args.seq_name == 'sequence_name'
+        assert args.sequence_dir == 'dest_dir/sequence_name'
 
     def test_add_sequence_missing_source_dir(self):
         """Test add_sequence with non-existent source directory."""
         # Create mock args
         args = MagicMock()
         args.image_dir = str(self.test_dir / "nonexistent")
-        args.sequence_dir = str(self.dest_dir)
-        args.seq_name = "test_sequence"
+        args.sequence_dir = str(self.dest_dir / "test_sequence")
         
         result = add_sequence_main(args)
         assert result == 1, "Should return error code for missing source directory"
 
     def test_add_sequence_creates_structure(self):
         """Test that add_sequence creates proper directory structure."""
-        # Set up args
-        self.dest_dir.mkdir()  # Create the sequence directory first
+        # Set up args - parent directory should exist, but target should not
+        self.dest_dir.mkdir()  # Create the parent directory
+        sequence_dir = self.dest_dir / "test_sequence"
+        
         args = MagicMock()
         args.image_dir = str(self.source_dir)
-        args.sequence_dir = str(self.dest_dir)
-        args.seq_name = "test_sequence"
+        args.sequence_dir = str(sequence_dir)
         
         result = add_sequence_main(args)
         
@@ -68,7 +67,6 @@ class TestPreprocessCommands:
         assert result == 0, "Should return success code"
         
         # Check directory structure was created
-        sequence_dir = self.dest_dir / "test_sequence"
         assert sequence_dir.exists(), "Sequence directory should be created"
         
         expected_dirs = ['0_raw_images', '1_keyframes', '2_labelled']
@@ -81,6 +79,31 @@ class TestPreprocessCommands:
         for subdir in ['images', 'labels', 'masks']:
             subdir_path = labelled_dir / subdir
             assert subdir_path.exists(), f"Subdirectory {subdir} should be created"
+
+    def test_add_sequence_existing_sequence_dir(self):
+        """Test add_sequence with existing sequence directory."""
+        # Create both parent and target directories
+        self.dest_dir.mkdir()
+        sequence_dir = self.dest_dir / "test_sequence"
+        sequence_dir.mkdir()  # This should cause an error
+        
+        args = MagicMock()
+        args.image_dir = str(self.source_dir)
+        args.sequence_dir = str(sequence_dir)
+        
+        result = add_sequence_main(args)
+        assert result == 1, "Should return error code for existing sequence directory"
+
+    def test_add_sequence_missing_parent_dir(self):
+        """Test add_sequence with non-existent parent directory."""
+        sequence_dir = self.dest_dir / "nonexistent_parent" / "test_sequence"
+        
+        args = MagicMock()
+        args.image_dir = str(self.source_dir)
+        args.sequence_dir = str(sequence_dir)
+        
+        result = add_sequence_main(args)
+        assert result == 1, "Should return error code for missing parent directory"
 
     def test_symlink_images_argument_parser(self):
         """Test symlink_images argument parser configuration."""
