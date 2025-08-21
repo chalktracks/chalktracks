@@ -9,6 +9,7 @@ tqdm
 ultralytics
 dvc
 dvc-ssh
+mlflow
 
 # Development dependencies
 pytest>=6.0.0
