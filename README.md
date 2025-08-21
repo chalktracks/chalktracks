@@ -53,13 +53,11 @@ The choice of model to use for chalk segmentation was primarily based on the cho
 #### MLOps
 
 The project makes use of 
-* [Fiftyone](https://docs.voxel51.com/) (for dataset visualization) 
-* [DVC](https://dvc.org/) (for dataset versioning)
-* [MLflow](https://mlflow.org/) (for experiment tracking)
 
-<img src="https://user-images.githubusercontent.com/25985824/106288517-2422e000-6216-11eb-871d-26ad2e7b1e59.png" width="32" height="32" />
-<img src="https://upload.wikimedia.org/wikipedia/commons/a/af/Data_Version_Control._Official_Logo_by_Iterative.ai.png" width="32" height="32" /> 
-<img src="https://raw.githubusercontent.com/mlflow/mlflow/refs/heads/master/assets/logo.svg" width="32" height="32" />
+<img src="https://user-images.githubusercontent.com/25985824/106288517-2422e000-6216-11eb-871d-26ad2e7b1e59.png" width="32" height="32" /> [Fiftyone](https://docs.voxel51.com/) (for dataset visualization) </br>
+<img src="https://upload.wikimedia.org/wikipedia/commons/a/af/Data_Version_Control._Official_Logo_by_Iterative.ai.png" width="32" height="32" />  [DVC](https://dvc.org/) (for dataset versioning) </br>
+<img src="https://raw.githubusercontent.com/mlflow/mlflow/refs/heads/master/assets/logo.svg" width="32" height="32" />  [MLflow](https://mlflow.org/) (for experiment tracking) </br>
+
 
 ## Segmentation Model Training Workflow
 
@@ -169,6 +167,11 @@ python -m chalk.cli <command>   # Direct module usage
 To add a new command, simply create a module in the appropriate category with the required functions - it will automatically appear in `chalk --help`.
 See [chalk/cli.py](./chalk/cli.py) for implementation.
 
+
+## TODO
+
+
+* script to run model on a directory of images and make a video
 ---
 
 **Note:** As of August 2025 I've started using GitHub Copilot for this project. Code added after this date may be heavily AI-generated. 🤖
