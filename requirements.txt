@@ -7,6 +7,8 @@ opencv-python
 scikit-image
 tqdm
 ultralytics
+dvc
+dvc-ssh
 
 # Development dependencies
 pytest>=6.0.0
