@@ -1,9 +1,60 @@
 import argparse
+import ast
 import importlib
+import importlib.util
 import pkgutil
 import sys
 from pathlib import Path
 import chalk
+
+
+def has_required_functions(module_path):
+    """
+    Check if a Python file has 'main' and 'add_arg_parser' functions without importing it.
+    Uses AST parsing which is much faster than importing.
+    """
+    try:
+        with open(module_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Parse the file into an AST
+        tree = ast.parse(content)
+        
+        # Look for function definitions
+        functions = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                functions.add(node.name)
+        
+        # Check if both required functions are present
+        return 'main' in functions and 'add_arg_parser' in functions
+        
+    except Exception:
+        # If we can't parse the file, assume it doesn't have the functions
+        return False
+
+
+def get_function_docstring(module_path, function_name):
+    """
+    Extract a function's docstring without importing the module.
+    """
+    try:
+        with open(module_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        tree = ast.parse(content)
+        
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.FunctionDef) and 
+                node.name == function_name and 
+                ast.get_docstring(node)):
+                docstring = ast.get_docstring(node)
+                return docstring.strip().split('\n')[0]  # First line only
+                
+    except Exception:
+        pass
+    
+    return None
 
 
 def discover_commands():
@@ -21,34 +72,48 @@ def discover_commands():
                 modname.endswith(".cli") or 
                 modname.endswith(".__main__")):
                 continue
-                
-            # Import the module
-            module = importlib.import_module(modname)
             
-            # Check if it has both required functions
-            if hasattr(module, 'main') and hasattr(module, 'add_arg_parser'):
+            # Get the actual file path
+            spec = importlib.util.find_spec(modname)
+            if spec is None or spec.origin is None:
+                continue
+                
+            module_path = Path(spec.origin)
+            
+            # Skip if it's not a .py file
+            if module_path.suffix != '.py':
+                continue
+            
+            # Check if it has the required functions (without importing)
+            if has_required_functions(module_path):
                 # Extract command name from module path
-                # e.g., "chalk.preprocess.add_sequence" -> "add_sequence"
                 command_name = modname.split('.')[-1]
                 
                 # Get the module category (preprocess, model, util)
                 parts = modname.split('.')
                 if len(parts) >= 3:
                     category = parts[1]  # preprocess, model, util
+                    
+                    # Get docstring without importing
+                    docstring = get_function_docstring(module_path, 'main')
+                    
                     commands[command_name] = {
-                        'module': module,
+                        'module_name': modname,
+                        'module_path': module_path,
                         'category': category,
-                        'full_name': modname
+                        'docstring': docstring or f"{command_name} command"
                     }
                     
-        except ImportError as e:
-            # Skip modules that can't be imported
-            continue
         except Exception as e:
-            # Skip modules that have other errors
+            # Skip modules that have errors
             continue
     
     return commands
+
+
+def lazy_import_module(module_name):
+    """Import a module only when needed."""
+    return importlib.import_module(module_name)
 
 
 def print_custom_help(commands):
@@ -72,12 +137,7 @@ def print_custom_help(commands):
     for category in sorted(categories.keys()):
         print(f"\n    [{category}]")
         for cmd_name, cmd_info in sorted(categories[category]):
-            module = cmd_info['module']
-            # Get description from main function docstring
-            description = f"{cmd_name} command"
-            if hasattr(module, 'main') and hasattr(module.main, '__doc__') and module.main.__doc__:
-                description = module.main.__doc__.strip().split('\n')[0]
-            
+            description = cmd_info['docstring']
             print(f"        {cmd_name:<18} {description}")
     
     print()
@@ -90,7 +150,7 @@ def print_custom_help(commands):
 def main():
     """Main CLI entry point with automatic command discovery."""
     
-    # Discover all available commands
+    # Discover all available commands (fast, no imports)
     commands = discover_commands()
     
     if not commands:
@@ -123,40 +183,48 @@ def main():
             categories[category] = []
         categories[category].append((cmd_name, cmd_info))
     
-    # Create subparsers for each command (without category prefix in help)
+    # Create subparsers for each command (lazy import only when needed)
     for category in sorted(categories.keys()):
         for cmd_name, cmd_info in sorted(categories[category]):
-            module = cmd_info['module']
-            
-            # Get short description from main function's docstring (no category prefix)
-            help_text = ""
-            if hasattr(module, 'main') and hasattr(module.main, '__doc__') and module.main.__doc__:
-                help_text = module.main.__doc__.strip().split('\n')[0]
-            else:
-                help_text = f"{cmd_name} command"
             
             # Create subparser for this command
             cmd_parser = subparsers.add_parser(
                 cmd_name,
-                help=help_text,
+                help=cmd_info['docstring'],
                 formatter_class=argparse.RawDescriptionHelpFormatter
             )
             
-            # Use the module's add_arg_parser function to configure arguments
-            module.add_arg_parser(cmd_parser)
-            
-            # Set the function to call when this command is selected
-            cmd_parser.set_defaults(func=module.main)
+            # Store the module name for lazy loading
+            cmd_parser.set_defaults(
+                module_name=cmd_info['module_name'],
+                command_name=cmd_name
+            )
     
-    # Parse arguments and execute the selected command
-    args = parser.parse_args()
+    # Parse arguments (first pass to get the command)
+    args, remaining = parser.parse_known_args()
     
-    # Call the selected command's main function
+    # Now lazy import only the module we actually need
     try:
-        result = args.func(args)
+        module = lazy_import_module(args.module_name)
+        
+        # Create a new parser for this specific command
+        specific_parser = argparse.ArgumentParser(
+            prog=f"chalk {args.command_name}",
+            formatter_class=argparse.RawDescriptionHelpFormatter
+        )
+        
+        # Configure the parser for this specific command
+        module.add_arg_parser(specific_parser)
+        
+        # Parse all arguments with the command-specific parser
+        final_args = specific_parser.parse_args(remaining)
+        
+        # Execute the command
+        result = module.main(final_args)
         return result if result is not None else 0
+        
     except Exception as e:
-        print(f"Error executing {args.command}: {e}")
+        print(f"Error executing {args.command_name}: {e}")
         return 1
 if __name__ == "__main__":
     exit(main())

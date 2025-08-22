@@ -18,14 +18,10 @@ class TestCLI:
         
         # Check that discovered commands have required structure
         for cmd_name, cmd_info in commands.items():
-            assert 'module' in cmd_info, f"Command {cmd_name} should have module info"
+            assert 'module_name' in cmd_info, f"Command {cmd_name} should have module_name info"
+            assert 'module_path' in cmd_info, f"Command {cmd_name} should have module_path"
             assert 'category' in cmd_info, f"Command {cmd_name} should have category"
-            assert 'full_name' in cmd_info, f"Command {cmd_name} should have full_name"
-            
-            # Verify module has required functions
-            module = cmd_info['module']
-            assert hasattr(module, 'main'), f"Module {cmd_name} should have main function"
-            assert hasattr(module, 'add_arg_parser'), f"Module {cmd_name} should have add_arg_parser function"
+            assert 'docstring' in cmd_info, f"Command {cmd_name} should have docstring"
             
             # Verify category is valid
             assert cmd_info['category'] in ['preprocess', 'model', 'util'], f"Command {cmd_name} should have valid category"
@@ -47,10 +43,10 @@ class TestCLI:
         
         # Check that no discovered command comes from excluded modules
         for cmd_name, cmd_info in commands.items():
-            full_name = cmd_info['full_name']
-            assert '.__init__' not in full_name, "Should not discover __init__ modules"
-            assert '.cli' not in full_name, "Should not discover cli module"
-            assert '.__main__' not in full_name, "Should not discover __main__ modules"
+            module_name = cmd_info['module_name']
+            assert '.__init__' not in module_name, "Should not discover __init__ modules"
+            assert '.cli' not in module_name, "Should not discover cli module"
+            assert '.__main__' not in module_name, "Should not discover __main__ modules"
 
     @patch('builtins.print')
     def test_print_custom_help(self, mock_print):
@@ -58,20 +54,14 @@ class TestCLI:
         # Create mock commands for testing
         mock_commands = {
             'test-cmd1': {
-                'module': MagicMock(),
                 'category': 'preprocess',
-                'full_name': 'chalk.preprocess.test_cmd1'
+                'docstring': 'Test command 1 description'
             },
             'test-cmd2': {
-                'module': MagicMock(),
                 'category': 'util',
-                'full_name': 'chalk.util.test_cmd2'
+                'docstring': 'Test command 2 description'
             }
         }
-        
-        # Set up mock docstrings
-        mock_commands['test-cmd1']['module'].main.__doc__ = "Test command 1 description"
-        mock_commands['test-cmd2']['module'].main.__doc__ = "Test command 2 description"
         
         print_custom_help(mock_commands)
         
@@ -123,9 +113,9 @@ class TestCLIFunctional:
         commands = discover_commands()
         
         for cmd_name, cmd_info in commands.items():
-            module = cmd_info['module']
+            # Should have docstring field
+            assert 'docstring' in cmd_info, f"Command {cmd_name} should have docstring field"
             
-            # Main function should have docstring
-            if hasattr(module.main, '__doc__') and module.main.__doc__:
-                doc = module.main.__doc__.strip()
-                assert len(doc) > 0, f"Command {cmd_name} should have non-empty docstring"
+            docstring = cmd_info['docstring']
+            if docstring and docstring != f"{cmd_name} command":
+                assert len(docstring.strip()) > 0, f"Command {cmd_name} should have non-empty docstring"
