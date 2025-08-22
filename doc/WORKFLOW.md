@@ -117,16 +117,9 @@ git commit -m "completed labelling for ${SEQUENCE_DIR}"
 
 ## Processing steps: assemble combined dataset
 
-Combining sequences into a final dataset with test/train/val splits is handled by a dvc pipeline:
+Combine all sequences into a final dataset with test/train/val splits:
 ```
-dvc repro
-```
-which will:
-* confirm all images are labelled
-* combine sequences into train/val/split based on config in `params.yaml`
-
-OR JUST ADD ONE MORE SCRIPT? WHY BOTHER WITH A PIPELINE FOR ONE STEP?
-
+chalk combine_sequences --sequence-dir ./data/sequences/ --combined-dir ./data/combined_dataset/```
 
 ## Other scripts
 
