@@ -3,7 +3,10 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 import math
 import random
+import yaml
+
 from chalk.util.utils import put_files_into_dir
+from chalk import segmentation_classes
 
 def add_arg_parser(parser: argparse.ArgumentParser):
     """Adds arguments for the combine_sequences command."""
@@ -23,8 +26,12 @@ def move_images_and_labels(image_paths:list[Path], target_dir:Path):
 def main(args):
     """Combine multiple image sequences into a single dataset."""
 
-    print("Begin")
+    combined_dir = Path(args.combined_dir)
 
+    # confirm combined_dir is empty
+    if any(combined_dir.iterdir()):
+        print(f"Error: Combined directory '{combined_dir}' is not empty. Please delete existing contents or choose another directory.")
+        return
     
     # get sequence directories to combine
     # should be subdirectories of sequence_dir, which in turn have subdirectory "2_labelled"
@@ -61,9 +68,9 @@ def main(args):
     n_test = len(images_test)
     n_val = len(images_val)
 
-    train_dir = Path(args.combined_dir) / "train"
-    test_dir = Path(args.combined_dir) / "test"
-    val_dir = Path(args.combined_dir) / "val"
+    train_dir = combined_dir / "train"
+    test_dir = combined_dir / "test"
+    val_dir = combined_dir / "val"
 
     for directory, images in [
         (train_dir, images_train),
@@ -75,7 +82,18 @@ def main(args):
         (directory / "masks").mkdir(exist_ok=True)
         move_images_and_labels(images, directory)
 
-
+    # create data.yaml
+    description_dict = {
+        "path" : str(combined_dir.absolute()),
+        "train" : "./train/images",
+        "val" : "./val/images",
+        "test" : "./test/images",
+        "names" : {cls.index : cls.name for cls in segmentation_classes}
+    }
+    description_path = combined_dir / "data.yaml"
+    with open(description_path, 'w') as f:
+        yaml.dump(description_dict, f)
+    
     print("Finished combining sequences")
     print(f"""
 dataset split ({n_images} images)
@@ -83,8 +101,8 @@ train:\t{n_train}\t({n_train/n_images:.1%})
 test: \t{n_test}\t({n_test/n_images:.1%})
 val:  \t{n_val}\t({n_val/n_images:.1%})
 """)
-    print(f"Combined dataset saved to {args.combined_dir}")
-    print("Done")
+    print(f"Combined dataset saved to {combined_dir}")
+
 
 
 if __name__ == "__main__":

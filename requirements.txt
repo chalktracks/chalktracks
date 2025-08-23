@@ -10,6 +10,7 @@ ultralytics
 dvc
 dvc-ssh
 mlflow
+pyyaml
 
 # Development dependencies
 pytest>=6.0.0
