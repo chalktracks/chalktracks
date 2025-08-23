@@ -121,6 +121,13 @@ Combine all sequences into a final dataset with test/train/val splits:
 ```
 chalk combine_sequences --sequence-dir ./data/sequences/ --combined-dir ./data/combined_dataset/```
 
+Save combined dataset 
+```
+dvc commit
+git add data.dvc
+git commit -m "built dataset from existing sequences"
+```
+
 ## Other scripts
 
 ```
