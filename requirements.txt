@@ -1,16 +1,29 @@
 attrs
-flask
+dvc
+dvc-ssh
 fiftyone
+flask
 matplotlib
+mlflow
 numpy
 opencv-python
+pyyaml
 scikit-image
 tqdm
 ultralytics
-dvc
-dvc-ssh
-mlflow
-pyyaml
+
+# ultralytic onnx export requirements
+onnx>=1.12.0,<1.18.0
+onnxslim>=0.1.59
+onnxruntime-gpu
+
+# for me, Aug '25, latest torch errors out in training with
+# Error executing train_model: CUDA error: no kernel image is available for execution on the device
+# 
+# Driver Version: 550.163.01     CUDA Version: 12.4
+# Quadro M2000M
+# Pinning torch to older version resolves this
+torch<=2.7.1
 
 # Development dependencies
 pytest>=6.0.0
