@@ -3,12 +3,23 @@
 Process for using chalktracks tooling to label images and train chalk detection model.
 
 General idea:
-* data lives in a repo tracked by dvc
-* use another dir for training models
-* use chalktracks tool to preprocess and label data, as well as training model
+* keep data and training outputs within a workspace
+* data is tracked by dvc/git, can be versioned with git and be backed up using dvc 
+* another dir usesd for training models
+* chalktracks repo used as workflow tooling, does not need to be cloned, just pip-installed
 
+Expected workspace top-level structure:
+```
+chalk_workspace/
+├── data       # training dataset tracked with dvc
+└── training   # workspace for running and tracking model training runs
+```
 
-Setup workspace for training workflow (uses [uv](https://docs.astral.sh/uv/) for python env):
+The rest of this document provides the steps to build a dataset and train a model.
+
+## Prepare workspace
+
+Setup a workspace for training workflow and install the chalktracks cli tool `chalk` (using [uv](https://docs.astral.sh/uv/) for python env):
 
 ```
 mkdir chalk_workspace
@@ -20,23 +31,36 @@ uv pip install git+https://github.com/chalktracks/chalktracks.git
 . .venv/bin/activate
 ```
 
-## Processing steps: initialise data directory with dvc tracking
+## Build the dataset
+
+### Initialise data directory with dvc tracking
 
 ```
 cd data
 git init
 dvc init
+dvc config cache.type symlink
 git commit -m "dvc init"
-mkdir -p data/sequences
-mkdir data/combined_dataset
-dvc add data
-git add data.dvc .gitignore
+mkdir sequences
+mkdir combined_dataset
+dvc add combined_dataset
+git add combined_dataset.dvc .gitignore
 git commit -m "dvc add empty data dir"
 ```
 
+Note on `dvc config cache.type symlink` - before using DVC, I set up the workflow to symlink images across process stage directories to eliminate copies. Then I was confused when DVC got rid of my symlinks after `dvc commit`. AFAIU, it was replacing them with hardlinks. This should be fine, but confused me, so I set cache type to symlink as above, so I could still see my links. Probably I could get rid of all this symlinking and let dvc manage/avoid duplication, will leave it as-is for now. 
+
 ## Processing steps: add new sequence
 
-The following commands import images from `$IMPORT_DIR` and store in `$SEQUENCE_DIR`. 
+The following commands are run from the `workspace/data` directory.
+
+Images are imported from `$IMPORT_DIR` and stored in `$SEQUENCE_DIR`. 
+
+E.g. to create a new sequence "my_new_sequence" using images from a camera, set:
+```
+IMPORT_DIR=/media/my_camera
+SEQUENCE_DIR=./sequences/my_new_sequence
+```
 
 ### Import
 
@@ -55,10 +79,10 @@ sequence_0
     └── masks
 ```
 
-Commit to dvc
+Add new sequence to dvc
 ```
-dvc commit
-git add data.dvc
+dvc add ${SEQUENCE_DIR}
+git add -u
 git commit -m "Add ${SEQUENCE_DIR} raw images"
 ```
 
@@ -88,8 +112,8 @@ And/or, manually view images (eg in gthumb or file browser) and delete non-usefu
 
 When filtering complete, add to dvc
 ```
-dvc commit
-git add data.dvc
+dvc add ${SEQUENCE_DIR}
+git add -u
 git commit -m "completed keyframing for ${SEQUENCE_DIR}"
 ```
 
@@ -109,8 +133,8 @@ chalk view_images ${SEQUENCE_DIR}/2_labelled/
 
 Save labels 
 ```
-dvc commit
-git add data.dvc
+dvc add ${SEQUENCE_DIR}
+git add -u
 git commit -m "completed labelling for ${SEQUENCE_DIR}"
 ```
 
@@ -119,14 +143,22 @@ git commit -m "completed labelling for ${SEQUENCE_DIR}"
 
 Combine all sequences into a final dataset with test/train/val splits:
 ```
-chalk combine_sequences --sequence-dir ./data/sequences/ --combined-dir ./data/combined_dataset/```
+chalk combine_sequences --sequence-dir ./sequences/ --combined-dir ./combined_dataset/
+```
 
 Save combined dataset 
 ```
 dvc commit
-git add data.dvc
+git add -u
 git commit -m "built dataset from existing sequences"
 ```
+
+TODO
+* generate default config
+* train
+ * check how to track input dataset from dvc in mlfow
+* script to run mlflow?
+
 
 ## Other scripts
 
