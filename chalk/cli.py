@@ -157,11 +157,35 @@ def main():
         print("No commands found!")
         return 1
 
-    # Check if help is requested
-    if len(sys.argv) == 1 or '--help' in sys.argv or '-h' in sys.argv:
-        if len(sys.argv) == 1 or (len(sys.argv) == 2 and sys.argv[1] in ['--help', '-h']):
-            print_custom_help(commands)
-            return 0
+    # Check if help is requested at the top level
+    if len(sys.argv) == 1 or (len(sys.argv) == 2 and sys.argv[1] in ['--help', '-h']):
+        print_custom_help(commands)
+        return 0
+
+    # Check for command-specific help BEFORE creating the initial parser
+    if len(sys.argv) >= 2 and sys.argv[1] in commands:
+        command_name = sys.argv[1]
+        if len(sys.argv) >= 3 and sys.argv[2] in ['--help', '-h']:
+            # Import the module and let it handle its own help
+            try:
+                module = lazy_import_module(commands[command_name]['module_name'])
+                
+                # Create a parser specifically for this command
+                cmd_parser = argparse.ArgumentParser(
+                    prog=f"chalk {command_name}",
+                    formatter_class=argparse.RawDescriptionHelpFormatter
+                )
+                
+                # Let the module configure the parser
+                module.add_arg_parser(cmd_parser)
+                
+                # Show help for this specific command
+                cmd_parser.print_help()
+                return 0
+                
+            except Exception as e:
+                print(f"Error showing help for {command_name}: {e}")
+                return 1
 
     parser = argparse.ArgumentParser(
         description="Chalk: A command-line tool for chalk line following dataset preparation and model training.",
@@ -217,7 +241,8 @@ def main():
         module.add_arg_parser(specific_parser)
         
         # Parse all arguments with the command-specific parser
-        final_args = specific_parser.parse_args(remaining)
+        # Use sys.argv[2:] to skip 'chalk' and command name
+        final_args = specific_parser.parse_args(sys.argv[2:])
         
         # Execute the command
         result = module.main(final_args)

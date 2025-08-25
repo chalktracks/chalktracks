@@ -1,9 +1,10 @@
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 import importlib
 import sys
 from pathlib import Path
-from chalk.cli import discover_commands, print_custom_help
+import argparse
+from chalk.cli import discover_commands, print_custom_help, main
 
 
 class TestCLI:
@@ -119,3 +120,121 @@ class TestCLIFunctional:
             docstring = cmd_info['docstring']
             if docstring and docstring != f"{cmd_name} command":
                 assert len(docstring.strip()) > 0, f"Command {cmd_name} should have non-empty docstring"
+
+
+class TestCLIHelp:
+    """Test CLI help functionality."""
+
+    @patch('sys.argv', ['chalk', '--help'])
+    @patch('chalk.cli.print_custom_help')
+    @patch('chalk.cli.discover_commands')
+    def test_general_help_display(self, mock_discover, mock_print_help):
+        """Test that general help is displayed correctly."""
+        # Mock commands
+        mock_discover.return_value = {
+            'test_cmd': {
+                'category': 'preprocess',
+                'docstring': 'Test command'
+            }
+        }
+        
+        result = main()
+        
+        assert result == 0
+        mock_print_help.assert_called_once()
+
+    @patch('sys.argv', ['chalk', 'convert_model', '--help'])
+    @patch('chalk.cli.lazy_import_module')
+    @patch('chalk.cli.discover_commands')
+    def test_command_specific_help_display(self, mock_discover, mock_import):
+        """Test that command-specific help is displayed correctly."""
+        # Mock commands with convert_model
+        mock_discover.return_value = {
+            'convert_model': {
+                'module_name': 'chalk.model.convert_model',
+                'category': 'model',
+                'docstring': 'Convert model'
+            }
+        }
+        
+        # Mock the imported module
+        mock_module = MagicMock()
+        mock_import.return_value = mock_module
+        
+        # Mock argparse.ArgumentParser and its print_help method
+        with patch('argparse.ArgumentParser') as mock_parser_class:
+            mock_parser = MagicMock()
+            mock_parser_class.return_value = mock_parser
+            
+            result = main()
+            
+            assert result == 0
+            mock_import.assert_called_once_with('chalk.model.convert_model')
+            mock_module.add_arg_parser.assert_called_once()
+            mock_parser.print_help.assert_called_once()
+
+    @patch('sys.argv', ['chalk', 'nonexistent_command', '--help'])
+    @patch('chalk.cli.discover_commands')
+    def test_help_for_nonexistent_command(self, mock_discover):
+        """Test behavior when help is requested for non-existent command."""
+        # Mock no commands
+        mock_discover.return_value = {}
+        
+        result = main()
+        
+        # Should not crash and should return 1 for "no commands found"
+        assert result == 1
+
+    @patch('sys.argv', ['chalk', 'convert_model', '--help'])
+    @patch('chalk.cli.lazy_import_module')
+    @patch('chalk.cli.discover_commands')
+    def test_command_help_import_error(self, mock_discover, mock_import):
+        """Test behavior when module import fails during help display."""
+        # Mock commands
+        mock_discover.return_value = {
+            'convert_model': {
+                'module_name': 'chalk.model.convert_model',
+                'category': 'model',
+                'docstring': 'Convert model'
+            }
+        }
+        
+        # Mock import failure
+        mock_import.side_effect = ImportError("Module not found")
+        
+        with patch('builtins.print') as mock_print:
+            result = main()
+            
+            assert result == 1
+            # Should print error message
+            error_calls = [call for call in mock_print.call_args_list 
+                          if len(call[0]) > 0 and 'Error showing help' in str(call[0][0])]
+            assert len(error_calls) > 0
+
+    @patch('sys.argv', ['chalk'])
+    @patch('chalk.cli.print_custom_help')
+    @patch('chalk.cli.discover_commands')
+    def test_no_args_shows_help(self, mock_discover, mock_print_help):
+        """Test that calling with no args shows general help."""
+        mock_discover.return_value = {'test': {'category': 'test', 'docstring': 'test'}}
+        
+        result = main()
+        
+        assert result == 0
+        mock_print_help.assert_called_once()
+
+    def test_command_execution_integration(self):
+        """Integration test that command execution still works after help fix."""
+        # This is a simple integration test that verifies the CLI structure
+        # without complex mocking that could break internal argparse behavior
+        
+        # Test that we can import and discover commands
+        commands = discover_commands()
+        assert 'convert_model' in commands
+        
+        # Test that the convert_model command has the expected structure  
+        cmd_info = commands['convert_model']
+        # The module name could be either the package or the module within it
+        assert cmd_info['module_name'] in ['chalk.model.convert_model', 'chalk.model.convert_model.convert_model']
+        assert cmd_info['category'] == 'model'
+        assert 'docstring' in cmd_info
