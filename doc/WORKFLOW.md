@@ -191,14 +191,11 @@ To browse training records, open a browser and start the mlflow server:
 (sleep 5; open http://127.0.0.1:5000) & mlflow ui --backend-store-uri runs/mlflow
 ``` 
 
-
-
-
 TODO
-* generate default config
 * train
- * check how to track input dataset from dvc in mlfow
-* script to run mlflow?
+ * create mud file and log artifacts
+ * better model naming - datetimestring and/or random name?
+* script to run mlflow UI?
 
 
 ## Other scripts
@@ -210,10 +207,7 @@ Recursively finds and updates:
     * masks from RGB to int image
     * label txt from chalk = 0 to current label convention.
 
-TODO:
-* implement the scripts above
-* combine into single cli?
-* Test
+
 
 
 Scratch space - thinking about chalk repo, what scripts will exist?

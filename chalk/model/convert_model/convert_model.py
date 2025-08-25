@@ -28,7 +28,7 @@ def get_resource_path(filename):
 def setup_workspace(model_path, train_data_dir):
     """Set up workspace directory with required files."""
     # Set random seed for consistency in test image selection
-    random.seed(42)
+    random.seed(123)
     
     # Create temporary workspace
     workspace = Path(tempfile.mkdtemp(prefix="maixcam_convert_"))

@@ -11,6 +11,7 @@ from pathlib import Path
 from subprocess import run
 from typing import Any, Dict
 from chalk import segmentation_classes
+from chalk.model.convert_model import convert_model_to_maixcam
 
 
 # define custom dataset source for local images
@@ -62,17 +63,65 @@ def on_train_end(trainer):
     onnx_model = onnx.load(onnx_path)
     mlflow.onnx.log_model(onnx_model=onnx_model, artifact_path="model", registered_model_name="chalk_detect")
 
+    # Convert to MaixCAM format if enabled
+    convert_enabled = getattr(trainer, 'convert_to_maixcam', True)  # Default to True for backward compatibility
+    if convert_enabled:
+        try:
+            print("\n🔄 Converting model to MaixCAM format...")
+            
+            # Use training data directory for calibration
+            train_data_dir = Path(data_path) / "train" / "images"
+            if not train_data_dir.exists():
+                # Fallback to other common training data locations
+                alternatives = [
+                    Path(data_path) / "images" / "train",
+                    Path(data_path) / "train",
+                    Path(data_path) / "images"
+                ]
+                for alt in alternatives:
+                    if alt.exists() and any(alt.glob("*.jpg")) or any(alt.glob("*.png")):
+                        train_data_dir = alt
+                        break
+                else:
+                    print("⚠️  Could not find training images for MaixCAM conversion. Skipping conversion.")
+                    return
+            
+            # Convert the ONNX model to MaixCAM format
+            maixcam_files = convert_model_to_maixcam(onnx_path, train_data_dir)
+            
+            print("✅ MaixCAM conversion completed!")
+            print("Generated MaixCAM files:")
+            for file_path in maixcam_files:
+                print(f"  - {file_path}")
+                # Log each MaixCAM file as an artifact to MLflow
+                mlflow.log_artifact(str(file_path), "maixcam_models")
+                
+        except Exception as e:
+            print(f"❌ MaixCAM conversion failed: {e}")
+            print("Training completed successfully, but model conversion to MaixCAM format failed.")
+    else:
+        print("ℹ️  MaixCAM conversion skipped (disabled via --no-convert flag)")
+
+
 def add_arg_parser(parser: argparse.ArgumentParser):
     """Adds arguments for the train_model command."""
     parser.add_argument("data_yaml", help="Path to data.yaml dataset description file.")
     parser.add_argument("params_yaml", help="Path to params.yaml training params file.")
+    parser.add_argument("--no-convert", action="store_true", help="Skip automatic conversion to MaixCAM format after training")
 
 def main(args):
     """Train a segmentation model using the provided dataset."""
     print(f"Training model with data in {args.data_yaml} and params {args.params_yaml}...")
 
     model = YOLO("yolo11n-seg.pt")  # from pretrained
-    model.add_callback("on_train_end", on_train_end)
+    
+    # Store the conversion flag so the callback can access it
+    def on_train_end_with_convert_flag(trainer):
+        # Set the conversion flag on the trainer object
+        trainer.convert_to_maixcam = not args.no_convert
+        return on_train_end(trainer)
+    
+    model.add_callback("on_train_end", on_train_end_with_convert_flag)
 
     with open(args.params_yaml) as f:
         training_params = yaml.safe_load(f)
