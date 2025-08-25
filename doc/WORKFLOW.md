@@ -22,12 +22,18 @@ The rest of this document provides the steps to build a dataset and train a mode
 Setup a workspace for training workflow and install the chalktracks cli tool `chalk` (using [uv](https://docs.astral.sh/uv/) for python env):
 
 ```
-mkdir chalk_workspace
-cd chalk_workspace/
+CHALK_WORKSPACE_DIR=/path/to/use/for/workspace
+
+mkdir $CHALK_WORKSPACE_DIR
+cd $CHALK_WORKSPACE_DIR
 mkdir data
 mkdir training
 uv venv
 uv pip install git+https://github.com/chalktracks/chalktracks.git
+```
+
+The rest of the document assumed the `venv` is activated:
+```
 . .venv/bin/activate
 ```
 
@@ -36,7 +42,7 @@ uv pip install git+https://github.com/chalktracks/chalktracks.git
 ### Initialise data directory with dvc tracking
 
 ```
-cd data
+cd $CHALK_WORKSPACE_DIR/data
 git init
 dvc init
 dvc config cache.type symlink
@@ -50,7 +56,7 @@ git commit -m "dvc add empty data dir"
 
 Note on `dvc config cache.type symlink` - before using DVC, I set up the workflow to symlink images across process stage directories to eliminate copies. Then I was confused when DVC got rid of my symlinks after `dvc commit`. AFAIU, it was replacing them with hardlinks. This should be fine, but confused me, so I set cache type to symlink as above, so I could still see my links. Probably I could get rid of all this symlinking and let dvc manage/avoid duplication, will leave it as-is for now. 
 
-## Processing steps: add new sequence
+### Add a new sequence
 
 The following commands are run from the `workspace/data` directory.
 
@@ -62,7 +68,7 @@ IMPORT_DIR=/media/my_camera
 SEQUENCE_DIR=./sequences/my_new_sequence
 ```
 
-### Import
+#### Import
 
 ```
 chalk add_sequence --image-dir ${IMPORT_DIR} --sequence-dir ${SEQUENCE_DIR}
@@ -87,7 +93,7 @@ git commit -m "Add ${SEQUENCE_DIR} raw images"
 ```
 
 
-### Filter
+#### Filter
 
 Note the images are stored in `0_raw_images` and symlinked into `1_keyframes` and `2_labelled/images` as required, to avoid copies.
 
@@ -117,7 +123,7 @@ git add -u
 git commit -m "completed keyframing for ${SEQUENCE_DIR}"
 ```
 
-### Label
+#### Label
 
 Run label tool
 ```
@@ -139,7 +145,7 @@ git commit -m "completed labelling for ${SEQUENCE_DIR}"
 ```
 
 
-## Processing steps: assemble combined dataset
+#### Assemble combined dataset
 
 Combine all sequences into a final dataset with test/train/val splits:
 ```
@@ -152,6 +158,41 @@ dvc commit
 git add -u
 git commit -m "built dataset from existing sequences"
 ```
+
+## Train the model
+
+Training is performed from the workspace training directory. All following commands will run from this directory:
+```
+cd $CHALK_WORKSPACE_DIR/training
+```
+
+### Set config
+
+Training params can be modified via config file. Write a default config to the training directory:
+```
+chalk get_default_training_config
+```
+This will save `config.yaml` to the current dir, which can then be modified as desired.
+
+### Train
+
+Training can now begin:
+
+```
+chalk train_model $CHALK_WORKSPACE_DIR/data/combined_dataset/data.yaml config.yaml
+```
+
+This may take some time, depending on dataset size and training configuration.
+
+Training artifacts are saved under `runs/segment/train<run_number>`, and mlflow metrics are saved under `runs/mlflow/`.
+
+To browse training records, open a browser and start the mlflow server:
+```
+(sleep 5; open http://127.0.0.1:5000) & mlflow ui --backend-store-uri runs/mlflow
+``` 
+
+
+
 
 TODO
 * generate default config
