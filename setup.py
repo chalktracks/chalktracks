@@ -21,7 +21,10 @@ setup(
     long_description_content_type="text/markdown",
     url='https://github.com/chalktracks/chalktracks',
     package_data={
-        "chalk" : ["preprocess/label_tool/templates/*"]
+        "chalk": [
+            "preprocess/label_tool/templates/*",
+            "model/convert_model/resources/*"
+        ]
     },
     entry_points={
         'console_scripts': [

@@ -42,15 +42,8 @@ def get_dataset_version(data_yaml_path: Path) -> str:
 # for default mflow integration 
 # # Add mlfow model registration as per https://github.com/ultralytics/ultralytics/issues/8214
 def on_train_end(trainer):
-    # Export to ONNX
-    model_path = f"{trainer.save_dir}/weights/best.pt"
-    model = YOLO(model_path)
-    onnx_path = model.export(format="onnx", imgsz=[224, 320], simplify=True) 
+    """Callback to run at end of training to log model and dataset to MLflow."""
     
-    # Log ONNX model
-    onnx_model = onnx.load(onnx_path)
-    mlflow.onnx.log_model(onnx_model=onnx_model, artifact_path="model", registered_model_name="chalk_detect")
-
     # Log dataset
     data_path = trainer.data["path"] # should log just train path?
     dataset_version = get_dataset_version(data_path)
@@ -59,6 +52,15 @@ def on_train_end(trainer):
         name=f"chalk_dataset_{dataset_version}",                              
     )
     mlflow.log_input(dataset, context="training")
+
+    # Export to ONNX
+    model_path = f"{trainer.save_dir}/weights/best.pt"
+    model = YOLO(model_path)
+    onnx_path = model.export(format="onnx", imgsz=[224, 320], simplify=True) 
+    
+    # Log ONNX model
+    onnx_model = onnx.load(onnx_path)
+    mlflow.onnx.log_model(onnx_model=onnx_model, artifact_path="model", registered_model_name="chalk_detect")
 
 def add_arg_parser(parser: argparse.ArgumentParser):
     """Adds arguments for the train_model command."""

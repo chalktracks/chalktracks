@@ -4,8 +4,11 @@ import shutil
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 import argparse
+import subprocess
 from chalk.preprocess.add_sequence import main as add_sequence_main, add_arg_parser as add_sequence_parser
 from chalk.preprocess.symlink_images import main as symlink_main, add_arg_parser as symlink_parser
+from chalk.model.convert_model import add_arg_parser as convert_model_parser, setup_workspace, get_resource_path, convert_model_to_maixcam
+from chalk.model.convert_model.convert_model import run_subprocess_with_live_output
 
 
 class TestPreprocessCommands:
@@ -210,3 +213,123 @@ class TestArgumentParsers:
             if hasattr(parser, 'description') and parser.description:
                 assert isinstance(parser.description, str), f"Command {cmd_name} should have string description"
                 assert len(parser.description.strip()) > 0, f"Command {cmd_name} should have non-empty description"
+
+
+class TestModelCommands:
+    """Test model commands."""
+
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.test_dir = Path(tempfile.mkdtemp())
+        self.model_file = self.test_dir / "test_model.onnx"
+        self.train_dir = self.test_dir / "train_images"
+        self.train_dir.mkdir()
+        
+        # Create dummy model file
+        self.model_file.write_text("dummy onnx model content")
+        
+        # Create dummy training images
+        for i in range(5):
+            image_file = self.train_dir / f"train_image_{i}.png"
+            image_file.write_text(f"dummy image {i}")
+
+    def teardown_method(self):
+        """Clean up test fixtures."""
+        if self.test_dir.exists():
+            shutil.rmtree(self.test_dir)
+
+    def test_convert_model_argument_parser(self):
+        """Test convert_model argument parser configuration."""
+        parser = argparse.ArgumentParser()
+        convert_model_parser(parser)
+        
+        # Test with required arguments
+        args = parser.parse_args(['--model-path', 'test.onnx', '--train-data', 'train/'])
+        assert args.model_path == 'test.onnx'
+        assert args.train_data == 'train/'
+
+    def test_convert_model_resource_files_exist(self):
+        """Test that required resource files exist."""
+        # Test that resource files can be found
+        dockerfile_path = get_resource_path("Dockerfile")
+        script_path = get_resource_path("tpuc_dev_convert.sh")
+        
+        assert Path(dockerfile_path).exists(), "Dockerfile should exist"
+        assert Path(script_path).exists(), "tpuc_dev_convert.sh should exist"
+
+    def test_convert_model_workspace_setup(self):
+        """Test workspace setup functionality."""
+        workspace = setup_workspace(
+            self.model_file, 
+            self.train_dir
+        )
+        
+        try:
+            # Check workspace structure
+            assert workspace.exists(), "Workspace should be created"
+            assert (workspace / "data").exists(), "Data directory should exist"
+            assert (workspace / "data" / "model.onnx").exists(), "Model should be copied"
+            assert (workspace / "data" / "test_image.png").exists(), "Test image should be created"
+            assert (workspace / "data" / "train_images").exists(), "Training images directory should exist"
+            assert (workspace / "tpuc_dev_convert.sh").exists(), "Conversion script should be copied"
+            
+            # Check that all training images were copied (should be all 5)
+            train_images = list((workspace / "data" / "train_images").glob("*.png"))
+            assert len(train_images) == 5, f"Should have 5 training images, got {len(train_images)}"
+            
+        finally:
+            # Clean up
+            if workspace.exists():
+                shutil.rmtree(workspace)
+
+    @patch('builtins.print')
+    def test_live_output_streaming(self, mock_print):
+        """Test that subprocess output is streamed live to terminal."""
+        # Test with a simple command that produces output
+        # Use 'echo' to test multi-line output streaming
+        if shutil.which("echo"):
+            result = run_subprocess_with_live_output(["echo", "test output"])
+            
+            # Check that the command succeeded
+            assert result.returncode == 0
+            
+            # Verify that print was called (indicating live output)
+            assert mock_print.called, "Should have printed output live"
+            
+            # Check that the output contains expected content
+            printed_calls = [str(call) for call in mock_print.call_args_list]
+            output_text = ' '.join(printed_calls)
+            assert 'test output' in output_text or 'echo' in output_text
+
+    @patch('builtins.print')  
+    def test_live_output_with_command_logging(self, mock_print):
+        """Test that the command being run is logged."""
+        if shutil.which("echo"):
+            run_subprocess_with_live_output(["echo", "test"])
+            
+            # Verify that the command was logged
+            printed_calls = [str(call) for call in mock_print.call_args_list]
+            command_logged = any("Running: echo test" in str(call) for call in printed_calls)
+            assert command_logged, "Should log the command being executed"
+
+    def test_live_output_error_handling(self):
+        """Test that live output function handles command failures properly."""
+        # Test with a command that should fail
+        result = run_subprocess_with_live_output(["false"])  # 'false' command always returns 1
+        
+        # Should capture the failure
+        assert result.returncode != 0, "Should capture command failure"
+
+    def test_convert_model_api_function(self):
+        """Test the API function can be called directly."""
+        # Test that the function can be imported and has correct signature
+        import inspect
+        
+        # Check function signature
+        sig = inspect.signature(convert_model_to_maixcam)
+        params = list(sig.parameters.keys())
+        assert params == ['model_path', 'train_data_dir'], f"Expected ['model_path', 'train_data_dir'], got {params}"
+        
+        # Test that calling with invalid paths raises appropriate errors
+        with pytest.raises((FileNotFoundError, ValueError)):
+            convert_model_to_maixcam("nonexistent_model.onnx", "nonexistent_data_dir")
