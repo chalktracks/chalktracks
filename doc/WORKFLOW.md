@@ -58,6 +58,9 @@ Note on `dvc config cache.type symlink` - before using DVC, I set up the workflo
 
 ### Add a new sequence
 
+TODO: concepts section - what is a sequence?
+maybe even a sketch showing how sequences are processed then combined
+
 The following commands are run from the `workspace/data` directory.
 
 Images are imported from `$IMPORT_DIR` and stored in `$SEQUENCE_DIR`. 
@@ -196,6 +199,20 @@ TODO
  * create mud file and log artifacts
  * better model naming - datetimestring and/or random name?
 * script to run mlflow UI?
+* add warning/troubleshooting section
+warn about error:
+```
+4 compared
+3 passed
+0 equal, 0 close, 3 similar
+1 failed
+0 not equal, 1 not similar
+min_similiarity = (0.0, -0.9999894278362753, 11.905434131622314)
+Target yolov11n-seg-chalk_cv181x_int8_sym_tpu_outputs.npz
+Reference yolov11n-seg-chalk_top_outputs.npz
+npz compare FAILED.
+```
+-> went away when training 200 epochs 
 
 
 ## Other scripts

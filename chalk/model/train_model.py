@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 
 import mlflow.onnx
 from ultralytics import YOLO
@@ -10,8 +11,16 @@ import yaml
 from pathlib import Path
 from subprocess import run
 from typing import Any, Dict
+from coolname import generate_slug
 from chalk import segmentation_classes
 from chalk.model.convert_model import convert_model_to_maixcam
+
+
+def generate_run_name() -> str:
+    """Generate a human-readable run name with format: word-word-YYYYMMDD"""
+    date_str = datetime.now().strftime("%Y%m%d")
+    slug = generate_slug(2)  # 2 words
+    return f"{slug}-{date_str}"
 
 
 # define custom dataset source for local images
@@ -87,15 +96,18 @@ def on_train_end(trainer):
                     return
             
             # Convert the ONNX model to MaixCAM format
-            maixcam_files = convert_model_to_maixcam(onnx_path, train_data_dir)
-            
+            run_name = Path(trainer.save_dir).name
+            maixcam_model_path, mud_file_path = convert_model_to_maixcam(onnx_path, train_data_dir, run_name)
+
             print("✅ MaixCAM conversion completed!")
             print("Generated MaixCAM files:")
-            for file_path in maixcam_files:
-                print(f"  - {file_path}")
-                # Log each MaixCAM file as an artifact to MLflow
-                mlflow.log_artifact(str(file_path), "maixcam_models")
-                
+            print(f"  - {maixcam_model_path}")
+            print(f"  - {mud_file_path}")
+            
+            # Log each MaixCAM file as an artifact to MLflow
+            mlflow.log_artifact(str(maixcam_model_path), "maixcam_model")
+            mlflow.log_artifact(str(mud_file_path), "maixcam_model")
+
         except Exception as e:
             print(f"❌ MaixCAM conversion failed: {e}")
             print("Training completed successfully, but model conversion to MaixCAM format failed.")
@@ -113,6 +125,11 @@ def main(args):
     """Train a segmentation model using the provided dataset."""
     print(f"Training model with data in {args.data_yaml} and params {args.params_yaml}...")
 
+    # Generate a human-readable run name
+    run_name = generate_run_name()
+    print(f"🏃 Starting training run: {run_name}")
+    
+
     model = YOLO("yolo11n-seg.pt")  # from pretrained
     
     # Store the conversion flag so the callback can access it
@@ -129,7 +146,7 @@ def main(args):
     # ignore background class for training
     classes = [c.index for c in segmentation_classes if c.name != 'background']
 
-    results = model.train(data=args.data_yaml, classes=classes, **training_params)
+    results = model.train(name=run_name,data=args.data_yaml, classes=classes, **training_params)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

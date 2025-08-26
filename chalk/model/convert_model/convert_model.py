@@ -4,6 +4,45 @@ import subprocess
 import tempfile
 from pathlib import Path
 import random
+import configparser
+from typing import Dict
+from chalk import segmentation_classes
+
+
+def generate_mud_file_info(model_filename: str) -> Dict[str, Dict[str, str]]:
+    """Generate mud file information as a dictionary structure."""
+    # Get all class labels in order
+    labels = [cls.name for cls in sorted(segmentation_classes, key=lambda x: x.index) if cls.name != 'background']
+    
+    mud_info = {
+        "basic": {
+            "type": "cvimodel",
+            "model": model_filename
+        },
+        "extra": {
+            "model_type": "yolo11",
+            "input_type": "rgb", 
+            "type": "seg",
+            "mean": "0, 0, 0",
+            "scale": "0.00392156862745098, 0.00392156862745098, 0.00392156862745098",  # 1/255
+            "labels": ", ".join(labels)
+        }
+    }
+    
+    return mud_info
+
+
+def write_mud_file(mud_file_path: Path, mud_info: Dict[str, Dict[str, str]]) -> None:
+    """Write mud file information to an INI format file."""
+    config = configparser.ConfigParser()
+    
+    for section_name, section_data in mud_info.items():
+        config.add_section(section_name)
+        for key, value in section_data.items():
+            config.set(section_name, key, value)
+    
+    with open(mud_file_path, 'w') as f:
+        config.write(f)
 
 
 def add_arg_parser(parser: argparse.ArgumentParser):
@@ -173,41 +212,50 @@ def run_conversion(workspace):
     print("Model conversion completed successfully")
 
 
-def copy_results(workspace, model_path):
-    """Copy conversion results to output directory."""
+def copy_results(workspace, model_path, model_name=None):
+    """Copy conversion results to output directory and generate mud file."""
     # Use same directory as the input model
     output_dir = Path(model_path).parent
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Use default model name
-    model_name = "yolov11n-seg-chalk"
-    
     # Look for generated model files
-    model_files = list(workspace.glob(f"{model_name}_int8.*"))
+    model_file = list(workspace.glob("*.cvimodel")) 
     
-    if not model_files:
-        raise RuntimeError(f"No converted model files found matching {model_name}_int8.*")
+    if not model_file:
+        raise RuntimeError(f"No converted model files found matching *.cvimodel")
+    model_file = model_file[0]
     
-    copied_files = []
-    for model_file in model_files:
-        dest_file = output_dir / model_file.name
-        shutil.copy2(model_file, dest_file)
-        copied_files.append(dest_file)
-        print(f"Copied: {dest_file}")
+    # Determine the final model filename
+    if model_name:
+        final_model_name = f"{model_name}.cvimodel"
+    else:
+        final_model_name = model_file.name
     
-    return copied_files
+    dest_file = output_dir / final_model_name
+    shutil.copy2(model_file, dest_file)
+    print(f"Copied: {dest_file}")
+    
+    # Generate the mud file for the model
+    mud_file_path = dest_file.with_suffix('.mud')
+    mud_info = generate_mud_file_info(final_model_name)
+    write_mud_file(mud_file_path, mud_info)
+    print(f"Generated mud file: {mud_file_path}")
+    
+    return dest_file, mud_file_path
 
 
-def convert_model_to_maixcam(model_path, train_data_dir):
+def convert_model_to_maixcam(model_path, train_data_dir, model_name=None):
     """
     Convert trained model to MaixCAM format.
     
     Args:
         model_path: Path to the ONNX model file to convert
         train_data_dir: Path to training data directory (used for calibration)
+        model_name: Optional name for the output model files (without extension).
+                   If not provided, uses the original filename from the conversion.
         
     Returns:
-        List of generated file paths
+        Tuple of (Path to the converted model file, Path to the mud file).
         
     Raises:
         FileNotFoundError: If model or training data not found
@@ -234,15 +282,15 @@ def convert_model_to_maixcam(model_path, train_data_dir):
         run_conversion(workspace)
         
         # Copy results
-        output_files = copy_results(workspace, model_path)
+        converted_model_file, mud_file = copy_results(workspace, model_path, model_name)
         
         print("\n✅ Model conversion completed successfully!")
         print("Generated files:")
-        for file_path in output_files:
-            print(f"  - {file_path}")
-        
-        return output_files
-        
+        print(f"  - {converted_model_file}")
+        print(f"  - {mud_file}")
+
+        return converted_model_file, mud_file
+
     except Exception as e:
         print(f"❌ Error during conversion: {e}")
         raise

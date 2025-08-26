@@ -2,6 +2,8 @@
 
 This tool converts a trained YOLO segmentation model to MaixCAM format using TPU-MLIR.
 
+Reference: https://wiki.sipeed.com/maixpy/doc/en/ai_model_converter/maixcam.html
+
 ## Prerequisites
 
 - Docker must be installed and running
