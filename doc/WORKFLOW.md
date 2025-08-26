@@ -195,14 +195,12 @@ Training artifacts are saved under `runs/segment/train<run_number>`, and mlflow 
 
 To browse training records, open a browser and start the mlflow server:
 ```
-(sleep 5; open http://127.0.0.1:5000) & mlflow ui --backend-store-uri runs/mlflow
+chalk mlflow_ui $CHALK_WORKSPACE_DIR/training/runs/mlflow
 ``` 
 
 TODO
-* train
- * create mud file and log artifacts
- * better model naming - datetimestring and/or random name?
-* script to run mlflow UI?
+* document migration script
+* some way to run the model locally? Can I run it from my webcam?
 * add warning/troubleshooting section
 warn about error:
 ```
