@@ -15,6 +15,10 @@ chalk_workspace/
 └── training   # workspace for running and tracking model training runs
 ```
 
+The workspace will be used through the process of capturing image sequences, filtering them, labelling, comining into a single dataset, training, and deployment:
+
+![workflow](./workflow.png)
+
 The rest of this document provides the steps to build a dataset and train a model.
 
 ## Prepare workspace
