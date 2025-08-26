@@ -165,7 +165,8 @@ def main():
     # Check for command-specific help BEFORE creating the initial parser
     if len(sys.argv) >= 2 and sys.argv[1] in commands:
         command_name = sys.argv[1]
-        if len(sys.argv) >= 3 and sys.argv[2] in ['--help', '-h']:
+        # Check if help flag appears anywhere in the arguments after the command name
+        if any(arg in ['--help', '-h'] for arg in sys.argv[2:]):
             # Import the module and let it handle its own help
             try:
                 module = lazy_import_module(commands[command_name]['module_name'])

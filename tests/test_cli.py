@@ -223,6 +223,96 @@ class TestCLIHelp:
         assert result == 0
         mock_print_help.assert_called_once()
 
+    @patch('sys.argv', ['chalk', 'train_model', 'data.yaml', 'params.yaml', '--no-convert', '--help'])
+    @patch('chalk.cli.lazy_import_module')
+    @patch('chalk.cli.discover_commands')
+    def test_help_flag_with_other_args_after(self, mock_discover, mock_import):
+        """Test that help works when --help appears after other arguments."""
+        # Mock commands with train_model
+        mock_discover.return_value = {
+            'train_model': {
+                'module_name': 'chalk.model.train_model',
+                'category': 'model',
+                'docstring': 'Train model'
+            }
+        }
+        
+        # Mock the imported module
+        mock_module = MagicMock()
+        mock_import.return_value = mock_module
+        
+        # Mock argparse.ArgumentParser and its print_help method
+        with patch('argparse.ArgumentParser') as mock_parser_class:
+            mock_parser = MagicMock()
+            mock_parser_class.return_value = mock_parser
+            
+            result = main()
+            
+            assert result == 0
+            mock_import.assert_called_once_with('chalk.model.train_model')
+            mock_module.add_arg_parser.assert_called_once()
+            mock_parser.print_help.assert_called_once()
+
+    @patch('sys.argv', ['chalk', 'train_model', '--help', 'data.yaml', 'params.yaml'])
+    @patch('chalk.cli.lazy_import_module')
+    @patch('chalk.cli.discover_commands')
+    def test_help_flag_with_other_args_before(self, mock_discover, mock_import):
+        """Test that help works when --help appears before other arguments."""
+        # Mock commands with train_model
+        mock_discover.return_value = {
+            'train_model': {
+                'module_name': 'chalk.model.train_model',
+                'category': 'model',
+                'docstring': 'Train model'
+            }
+        }
+        
+        # Mock the imported module
+        mock_module = MagicMock()
+        mock_import.return_value = mock_module
+        
+        # Mock argparse.ArgumentParser and its print_help method
+        with patch('argparse.ArgumentParser') as mock_parser_class:
+            mock_parser = MagicMock()
+            mock_parser_class.return_value = mock_parser
+            
+            result = main()
+            
+            assert result == 0
+            mock_import.assert_called_once_with('chalk.model.train_model')
+            mock_module.add_arg_parser.assert_called_once()
+            mock_parser.print_help.assert_called_once()
+
+    @patch('sys.argv', ['chalk', 'train_model', 'data.yaml', '-h', 'params.yaml', '--no-convert'])
+    @patch('chalk.cli.lazy_import_module')
+    @patch('chalk.cli.discover_commands')
+    def test_short_help_flag_in_middle(self, mock_discover, mock_import):
+        """Test that -h works when it appears in the middle of arguments."""
+        # Mock commands with train_model
+        mock_discover.return_value = {
+            'train_model': {
+                'module_name': 'chalk.model.train_model',
+                'category': 'model',
+                'docstring': 'Train model'
+            }
+        }
+        
+        # Mock the imported module
+        mock_module = MagicMock()
+        mock_import.return_value = mock_module
+        
+        # Mock argparse.ArgumentParser and its print_help method
+        with patch('argparse.ArgumentParser') as mock_parser_class:
+            mock_parser = MagicMock()
+            mock_parser_class.return_value = mock_parser
+            
+            result = main()
+            
+            assert result == 0
+            mock_import.assert_called_once_with('chalk.model.train_model')
+            mock_module.add_arg_parser.assert_called_once()
+            mock_parser.print_help.assert_called_once()
+
     def test_command_execution_integration(self):
         """Integration test that command execution still works after help fix."""
         # This is a simple integration test that verifies the CLI structure
