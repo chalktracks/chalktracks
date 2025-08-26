@@ -136,6 +136,7 @@ class TestViewImages:
         assert structure["images_path"] == images_dir
         assert structure["has_masks"] == True
 
+    @patch('chalk.util.view_images.FIFTYONE_AVAILABLE', False)
     def test_main_without_fiftyone(self):
         """Test main function when fiftyone is not available."""
         # Create simple directory with images
@@ -154,8 +155,12 @@ class TestViewImages:
         main(args)  # Should exit gracefully with error message
 
     @patch('chalk.util.view_images.FIFTYONE_AVAILABLE', True)
-    def test_main_directory_does_not_exist(self):
+    @patch('chalk.util.view_images.fo.launch_app')
+    @patch('chalk.util.view_images.fo.list_datasets')
+    def test_main_directory_does_not_exist(self, mock_list_datasets, mock_launch_app):
         """Test main function with non-existent directory."""
+        mock_list_datasets.return_value = []
+        
         nonexistent_dir = self.test_dir / "does_not_exist"
         
         args = argparse.Namespace(
@@ -167,8 +172,12 @@ class TestViewImages:
             main(args)
 
     @patch('chalk.util.view_images.FIFTYONE_AVAILABLE', True)
-    def test_main_path_is_not_directory(self):
+    @patch('chalk.util.view_images.fo.launch_app')
+    @patch('chalk.util.view_images.fo.list_datasets')
+    def test_main_path_is_not_directory(self, mock_list_datasets, mock_launch_app):
         """Test main function when path is not a directory."""
+        mock_list_datasets.return_value = []
+        
         # Create a file instead of directory
         test_file = self.test_dir / "not_a_directory.txt"
         test_file.write_text("not a directory")
@@ -215,3 +224,38 @@ class TestViewImages:
         # Should still detect as simple since there are image files
         assert structure["type"] == "simple"
         assert structure["images_path"] == mixed_dir
+
+    @patch('chalk.util.view_images.FIFTYONE_AVAILABLE', True)
+    @patch('chalk.util.view_images.fo.launch_app')
+    @patch('chalk.util.view_images.fo.list_datasets')
+    @patch('chalk.util.view_images.fo.Dataset.from_images_dir')
+    def test_main_with_simple_dataset(self, mock_from_images_dir, mock_list_datasets, mock_launch_app):
+        """Test main function with a simple image dataset (without opening browser)."""
+        # Setup mocks
+        mock_list_datasets.return_value = []
+        mock_dataset = MagicMock()
+        mock_dataset.__len__ = MagicMock(return_value=1)
+        mock_dataset.app_config = MagicMock()
+        mock_from_images_dir.return_value = mock_dataset
+        
+        mock_session = MagicMock()
+        mock_launch_app.return_value = mock_session
+        
+        # Create simple directory with images
+        images_dir = self.test_dir / "simple_images"
+        images_dir.mkdir()
+        (images_dir / "image1.jpg").write_text("fake image")
+        
+        # Mock args
+        args = argparse.Namespace(
+            image_dir=str(images_dir),
+            name="test_dataset"
+        )
+        
+        # Run main function - should not open browser due to mocking
+        main(args)
+        
+        # Verify calls
+        mock_from_images_dir.assert_called_once()
+        mock_launch_app.assert_called_once_with(mock_dataset)
+        mock_session.wait.assert_called_once()
