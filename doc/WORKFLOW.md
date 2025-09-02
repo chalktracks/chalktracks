@@ -166,6 +166,14 @@ git add -u
 git commit -m "built dataset from existing sequences"
 ```
 
+#### (optional) Tag a dataset version
+
+For easier data version tracking, tag the current version:
+
+```
+git tag v1.0.0   # chose version as appropriate
+```
+
 ## Train the model
 
 Training is performed from the workspace training directory. All following commands will run from this directory:
@@ -191,9 +199,14 @@ chalk train_model $CHALK_WORKSPACE_DIR/data/combined_dataset/data.yaml config.ya
 
 This may take some time, depending on dataset size and training configuration.
 
-Training artifacts are saved under `runs/segment/train<run_number>`, and mlflow metrics are saved under `runs/mlflow/`.
+Training artifacts are saved under `runs/segment/<run_name>`, and mlflow metrics are saved under `runs/mlflow/`.
 
-To browse training records, open a browser and start the mlflow server:
+The `.cvimodel` and `.mud` files for deploying the trained model to Maixcam are saved under `runs/segment/<run-name>/weights/`.
+
+Run names are randomly generated and printed to the terminal during training. 
+
+
+To browse training records, the mlflow server can be launched with:
 ```
 chalk mlflow_ui $CHALK_WORKSPACE_DIR/training/runs/mlflow
 ``` 
@@ -219,8 +232,18 @@ npz compare FAILED.
 
 ## Other scripts
 
+### Migrate labels
+
+Should no longer be needed, at one point I needed to update label formats, keeping notes here in case I need to do something similar in future.
+
+Because the dvc cache is configured to symlink (TODO reconsider this decision), the [files need to be unprotected](https://dvc.org/doc/user-guide/how-to/update-tracked-data#modifying-content) before modification, then re-added to dvc on completion. Full process for a single sequence:
+
 ```
-python -m chalk.migrations update_for_sign_labels data_dir
+dvc unprotect ${SEQUENCE_DIR}
+chalk migrate_labels ${SEQUENCE_DIR}
+dvc add ${SEQUENCE_DIR}
+git add -u
+git commit "migrate labels for ${SEQUENCE_DIR}"
 ```
 Recursively finds and updates:
     * masks from RGB to int image
