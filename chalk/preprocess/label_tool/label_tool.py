@@ -11,7 +11,7 @@ from PIL import Image
 import numpy as np
 
 from chalk.util.utils import put_files_into_dir
-from chalk import segmentation_classes
+from chalk import segmentation_classes, segmentation_classes_except_background
 
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates'))
 
@@ -20,7 +20,7 @@ assert max(cls.index for cls in segmentation_classes) < 255, "error - only up to
 
 class_colors = {
     cls.name: f"rgb({cls.render_color[0]}, {cls.render_color[1]}, {cls.render_color[2]})"
-    for cls in segmentation_classes if cls.name != "background"
+    for cls in segmentation_classes
 }
 
 rgb_to_int_dict = defaultdict(
@@ -93,7 +93,7 @@ def mask_to_yolo_label(maskfile:Path, labelfile:Path):
         return f"{class_index} " + " ".join([f"{x} {y}" for x,y in contour])
     
     contour_strings = []
-    for segmentation_class in segmentation_classes:
+    for segmentation_class in segmentation_classes_except_background:  # don't create labels for background
         class_mask = (img == segmentation_class.index).astype(np.uint8)
         class_contours, _ = cv2.findContours(class_mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         contour_strings.extend([contour_to_str(contour, segmentation_class.index) for contour in class_contours])

@@ -29,3 +29,5 @@ segmentation_classes = [
 assert len(set(l.name         for l in segmentation_classes)) == len(segmentation_classes), "Error - class names must be unique"
 assert len(set(l.index        for l in segmentation_classes)) == len(segmentation_classes), "Error - class indices must be unique"
 assert len(set(l.render_color for l in segmentation_classes)) == len(segmentation_classes), "Error - class colors must be unique"
+
+segmentation_classes_except_background = [c for c in segmentation_classes if c.name != "background"]
