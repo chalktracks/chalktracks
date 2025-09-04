@@ -1,25 +1,89 @@
 # Training Workflow
 
-Process for using chalktracks tooling to label images and train chalk detection model.
+This document provides an outline of the process and tooling used to label images and train chalk detection model. 
+
+This process is used to build the dataset, train models, evaluate and iterate.
+
+## Workspace Structure
 
 General idea:
 * keep data and training outputs within a workspace
-* data is tracked by dvc/git, can be versioned with git and be backed up using dvc 
-* another dir usesd for training models
+* `data` directory is tracked by dvc/git, can be versioned with git and be backed up using dvc 
+* `training` directory is used for training models
 * chalktracks repo used as workflow tooling, does not need to be cloned, just pip-installed
 
-Expected workspace top-level structure:
+Example workspace structure:
 ```
 chalk_workspace/
-├── data       # training dataset tracked with dvc
-└── training   # workspace for running and tracking model training runs
+├── data
+│   ├── combined_dataset
+│   │   ├── test
+│   │   ├── train
+│   │   └── val
+│   └── sequences
+│       ├── 20250712_sequence_quick_test_dataset
+│       ├── 20250717_sequence_try_get_blue_working_better
+│       ├── 20250720_sequence_round_the_house
+│       ├── 20250722_sequence_more_brick
+│       └── 20250820_static_truck_printed_signs
+└── training
+    └── runs
+        ├── mlflow
+        └── segment
 ```
+The above workspace shows the `data` directory containing several image sequences, and a single combined dataset with test/train/val splits. It also shows the `training` directory with containing artifacts from model training runs. 
 
-The workspace will be used through the process of capturing image sequences, filtering them, labelling, comining into a single dataset, training, and deployment:
+The workspace is used through the process of capturing image sequences, filtering them, labelling, comining into a single dataset, training, and deployment.
+
+## Process Overview
+
+The dataset is built by producing a number of labelled "sequences", where a "sequence" refers to a single data collection run with the camera recording images at a given frequency.
+
+Initially sequences are captured to broadly cover expected operating conditions, then after evaluating the model "in the loop" (deployed on the robot), failure cases can be identified and captured in their own sequence (challenging lighting conditions, environments, etc).
+
+Sequences are individually filtered and labelled, before being combined into a single dataset. The combined dataset is used for model training, producing a model file which can be deployed to the camera/robot.
 
 ![workflow](./workflow.png)
 
-The rest of this document provides the steps to build a dataset and train a model.
+## Chalk tooling
+
+This repository contains the tooling used throughout the various steps of the process. The various tools are bundled into a single pip-installable cli named `chalk`. Top-level usage is as follows:
+
+```
+$ chalk --help
+usage: chalk [-h] COMMAND ...
+
+Chalk: A command-line tool for chalk line following dataset preparation and model training.
+
+positional arguments:
+  COMMAND             Available commands (organized by category)
+
+    [model]
+        convert_model      CLI entry point for convert_model command.
+        get_default_training_config Generate a default training configuration file.
+        train_model        Train a segmentation model using the provided dataset.
+
+    [preprocess]
+        add_sequence       Copy raw images into a new sequence directory for dataset preprocessing.
+        check_labels       Validate and check consistency of image labels.
+        combine_sequences  Combine multiple image sequences into a single dataset.
+        label_tool         Launch the interactive labeling tool for annotating images.
+        migrate_labels     Migrate labelled data from old format to new format.
+        remove_empty_files Find and remove all zero-size files in the specified directory.
+        similarity_filter  Filter images based on structural similarity threshold.
+        symlink_images     Create symlinks to images from source to destination directory.
+
+    [util]
+        mlflow_ui          Start MLflow UI server and optionally open browser.
+        view_images        Display images from a directory for visual inspection using FiftyOne.
+
+options:
+  -h, --help          show this help message and exit
+
+Use 'chalk COMMAND -h' for detailed help on a specific command.
+```
+
+The following sections outline in detail how to use this tool within the data collection and model training workflow.
 
 ## Prepare workspace
 
