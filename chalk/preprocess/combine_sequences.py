@@ -60,7 +60,7 @@ def main(args):
     random.seed(123)
     random.shuffle(all_images) # just to be sure we're randomly sampling
 
-    images_train, images_test_and_val = train_test_split(images, train_size=p_train)
+    images_train, images_test_and_val = train_test_split(all_images, train_size=p_train)
     images_test, images_val = train_test_split(images_test_and_val, train_size=p_test/(p_test+p_val))
 
     n_images = len(all_images)
