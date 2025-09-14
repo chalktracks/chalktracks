@@ -12,7 +12,7 @@ from chalk import segmentation_classes
 def generate_mud_file_info(model_filename: str) -> Dict[str, Dict[str, str]]:
     """Generate mud file information as a dictionary structure."""
     # Get all class labels in order
-    labels = [cls.name for cls in sorted(segmentation_classes, key=lambda x: x.index) if cls.name != 'background']
+    labels = [cls.name for cls in sorted(segmentation_classes, key=lambda x: x.index)]
     
     mud_info = {
         "basic": {
