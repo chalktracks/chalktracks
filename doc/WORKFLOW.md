@@ -159,7 +159,7 @@ sequence_0
 Add new sequence to dvc
 ```
 dvc add ${SEQUENCE_DIR}
-git add -u
+git add ${SEQUENCE_DIR}.dvc .gitignore
 git commit -m "Add ${SEQUENCE_DIR} raw images"
 ```
 
