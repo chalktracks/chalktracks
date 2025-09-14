@@ -31,6 +31,7 @@ def get_default_config():
         'mosaic': 1.0,
         'mixup': 0.0,
         'copy_paste': 0.0,
+        'fliplr': 0.0,  # messes up left/right sign classification
     }
 
 
