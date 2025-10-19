@@ -224,7 +224,6 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        classSelector.value = "{{ class_colors.keys()|first }}";
                         loadNextImage();
                     } else {
                         alert('Error saving segmentation');
